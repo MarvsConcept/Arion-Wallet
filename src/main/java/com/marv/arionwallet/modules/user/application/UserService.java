@@ -4,6 +4,8 @@ import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.user.domain.UserRepository;
 import com.marv.arionwallet.modules.user.presentation.UserRegistrationRequestDto;
 import com.marv.arionwallet.modules.user.presentation.UserResponseDto;
+import com.marv.arionwallet.modules.wallet.domain.Wallet;
+import com.marv.arionwallet.modules.wallet.domain.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final WalletRepository walletRepository;
 
 
     @Transactional
@@ -44,6 +47,13 @@ public class UserService {
 
         // Save to the database
         User savedUser = userRepository.save(user);
+
+        Wallet wallet = Wallet.builder()
+                .user(savedUser)
+                .currency("NGN")
+                .build();
+
+        walletRepository.save(wallet);
 
         // Map to user response
         return new UserResponseDto(
