@@ -4,6 +4,7 @@ import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.user.domain.UserRepository;
 import com.marv.arionwallet.modules.user.presentation.UserRegistrationRequestDto;
 import com.marv.arionwallet.modules.user.presentation.UserResponseDto;
+import com.marv.arionwallet.modules.user.presentation.UserSummaryDto;
 import com.marv.arionwallet.modules.wallet.domain.Wallet;
 import com.marv.arionwallet.modules.wallet.domain.WalletRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,7 @@ public class UserService {
         // Save to the database
         User savedUser = userRepository.save(user);
 
+        // Create Wallet during registration
         Wallet wallet = Wallet.builder()
                 .user(savedUser)
                 .currency("NGN")
@@ -56,15 +58,35 @@ public class UserService {
         walletRepository.save(wallet);
 
         // Map to user response
-        return new UserResponseDto(
-                savedUser.getId(),
-                savedUser.getEmail(),
-                savedUser.getPhone(),
-                savedUser.getFirstName(),
-                savedUser.getLastName(),
-                savedUser.getStatus(),
-                savedUser.getKycLevel(),
-                savedUser.getCreatedAt()
-        );
+        return UserResponseDto.builder()
+                .id(savedUser.getId())
+                .email(savedUser.getEmail())
+                .phone(savedUser.getPhone())
+                .firstName(savedUser.getFirstName())
+                .lastName(savedUser.getLastName())
+                .status(savedUser.getStatus())
+                .kycLevel(savedUser.getKycLevel())
+                .createdAt(savedUser.getCreatedAt())
+                .build();
     }
+
+    public UserSummaryDto getUserSummary(User currentUser) {
+        // Load the users NGN wallet
+        Wallet wallet = walletRepository.findByUserIdAndCurrency(currentUser.getId(), "NGN")
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found for user"));
+
+        return UserSummaryDto.builder()
+                .userId(currentUser.getId())
+                .firstName(currentUser.getFirstName())
+                .lastName(currentUser.getLastName())
+                .email(currentUser.getEmail())
+                .phone(currentUser.getPhone())
+                .status(currentUser.getStatus())
+                .kycLevel(currentUser.getKycLevel())
+                .walletCurrency(wallet.getCurrency())
+                .walletBalance(wallet.getBalance())
+                .build();
+    }
+
+
 }

@@ -1,13 +1,16 @@
 package com.marv.arionwallet.core.security;
 
 import com.marv.arionwallet.modules.user.domain.User;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import java.security.Key;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -34,4 +37,27 @@ public class JwtService {
                 .signWith(signingKey)
                 .compact();
     }
+
+    // Parse and validate token, return claims
+    public Claims parseToken(String token) {
+        return Jwts.parser()
+                .verifyWith((SecretKey) signingKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    // Get userId from token (using "sub")
+    public UUID extractUserId(String token) {
+        Claims claims = parseToken(token);
+        String subject = claims.getSubject();
+        return UUID.fromString(subject);
+    }
+
+    // Optional: get email from claim (if you need it)
+    public String extractEmail(String token) {
+        Claims claims = parseToken(token);
+        return claims.get("email", String.class);
+    }
+
 }

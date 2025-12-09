@@ -5,22 +5,21 @@ import com.marv.arionwallet.modules.user.domain.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
 @Builder
-public class UserResponseDto {
+public class UserSummaryDto {
 
-    private UUID id;
-    private String email;
-    private String phone;
+    private UUID userId;
     private String firstName;
     private String lastName;
+    private String email;
+    private String phone;
     private UserStatus status;
     private KycLevel kycLevel;
-    private Instant createdAt;
+    private String walletCurrency;
+    private Long walletBalance;
 }

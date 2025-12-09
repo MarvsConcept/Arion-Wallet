@@ -5,6 +5,7 @@ import com.marv.arionwallet.modules.auth.presentation.LoginRequestDto;
 import com.marv.arionwallet.modules.auth.presentation.LoginResponseDto;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.user.domain.UserRepository;
+import com.marv.arionwallet.modules.user.domain.UserStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,9 +32,10 @@ public class AuthService {
         // Generate the token
         String token = jwtService.generateToken(user);
 
-//        if (!"ACTIVE".equals(user.getStatus())) {
-//            throw new IllegalArgumentException("Account is " + user.getStatus());
-//        }
+        // Check if the user account status is Active
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new IllegalArgumentException("Account is " + user.getStatus());
+        }
 
         return new LoginResponseDto(
                 token,
