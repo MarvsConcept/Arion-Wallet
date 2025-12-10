@@ -25,6 +25,12 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+//    @Bean
+//    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService,
+//                                                           UserRepository userRepository) {
+//        return new JwtAuthenticationFilter(jwtService, userRepository);
+//    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http

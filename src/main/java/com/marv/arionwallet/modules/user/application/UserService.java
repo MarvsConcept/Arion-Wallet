@@ -70,6 +70,7 @@ public class UserService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public UserSummaryDto getUserSummary(User currentUser) {
         // Load the users NGN wallet
         Wallet wallet = walletRepository.findByUserIdAndCurrency(currentUser.getId(), "NGN")

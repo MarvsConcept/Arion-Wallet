@@ -77,9 +77,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-//    @Bean
-//    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService,
-//                                                           UserRepository userRepository) {
-//        return new JwtAuthenticationFilter(jwtService, userRepository);
-//    }
+
 }
