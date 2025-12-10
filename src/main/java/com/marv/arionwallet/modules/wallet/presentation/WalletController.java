@@ -19,13 +19,25 @@ public class WalletController {
     private final WalletService walletService;
 
     @PostMapping("/fund")
-    public ApiResponse<FundWalletResponseDto> fundWallet(Authentication authentication,
-                                                         @Valid @RequestBody FundWalletRequestDto request) {
+    public ApiResponse<InitiateFundingResponseDto> initialFunding(
+            Authentication authentication,
+            @Valid @RequestBody FundWalletRequestDto request) {
+
         User currentUser = (User) authentication.getPrincipal();
 
-        FundWalletResponseDto response = walletService.fundWallet(currentUser, request);
+        InitiateFundingResponseDto response = walletService.initiateFunding(currentUser, request);
 
-        return ApiResponse.ok("Wallet fnded successfully", response);
+        return ApiResponse.ok("Funding initiated successfully", response);
     }
+
+    @PostMapping("/fund/callback")
+    public ApiResponse<CompleteFundingResponseDto> completeFunding(
+                        @Valid @RequestBody FundingCallbackRequestDto request) {
+
+        CompleteFundingResponseDto response = walletService.completeFunding(request.getReference());
+
+        return ApiResponse.ok("Funding completed successfully", response);
+    }
+
 
 }

@@ -77,6 +77,14 @@ public class Transaction {
         this.updatedAt = updatedAt != null ? updatedAt : now;
     }
 
+    public void markSuccess() {
+        this.status = TransactionStatus.SUCCESS;
+    }
+
+    public boolean isCompleted() {
+        return this.status == TransactionStatus.SUCCESS;
+    }
+
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();

@@ -7,8 +7,9 @@ import com.marv.arionwallet.modules.transaction.domain.TransactionType;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.wallet.domain.Wallet;
 import com.marv.arionwallet.modules.wallet.domain.WalletRepository;
+import com.marv.arionwallet.modules.wallet.presentation.CompleteFundingResponseDto;
 import com.marv.arionwallet.modules.wallet.presentation.FundWalletRequestDto;
-import com.marv.arionwallet.modules.wallet.presentation.FundWalletResponseDto;
+import com.marv.arionwallet.modules.wallet.presentation.InitiateFundingResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +24,7 @@ public class WalletService {
     private final TransactionRepository transactionRepository;
 
     @Transactional
-    public FundWalletResponseDto fundWallet(User currentUser, FundWalletRequestDto request) {
+    public InitiateFundingResponseDto initiateFunding(User currentUser, FundWalletRequestDto request) {
 
         // Find the users wallet
         Wallet wallet = walletRepository.findByUserIdAndCurrency(currentUser.getId(), "NGN")
@@ -35,14 +36,14 @@ public class WalletService {
             throw new IllegalArgumentException("Amount must be positive");
         }
 
-        // Generate a reference
+        // Generate payment reference
         String reference = "FUND-" + UUID.randomUUID().toString().replace("_", "").substring(0, 12);
 
-        // Create SUCCESS transaction for now(Sync funding)
+        // Create PENDING transaction
         Transaction transaction = Transaction.builder()
                 .user(currentUser)
                 .type(TransactionType.FUNDING)
-                .status(TransactionStatus.SUCCESS)
+                .status(TransactionStatus.PENDING)
                 .amount(amount)
                 .currency(wallet.getCurrency())
                 .reference(reference)
@@ -51,16 +52,59 @@ public class WalletService {
 
         transactionRepository.save(transaction);
 
-        // Credit wallet
-        wallet.credit(amount);
+        // Return the information the client/gateway would use
+        return InitiateFundingResponseDto.builder()
+                .reference(reference)
+                .amountInKobo(amount)
+                .currency(wallet.getCurrency())
+                .build();
+
+//        // Credit wallet
+//        wallet.credit(amount);
+//        walletRepository.save(wallet);
+
+//        // Build Response;
+//        return FundWalletResponseDto.builder()
+//                .reference(reference)
+//                .currency(wallet.getCurrency())
+//                .amountInKobo(amount)
+//                .newBalanceInKobo(wallet.getBalance())
+//                .build();
+    }
+
+    @Transactional
+    public CompleteFundingResponseDto completeFunding(String reference) {
+
+        // Find transaction by reference
+        Transaction transaction = transactionRepository.findByReference(reference)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid reference"));
+
+        // Guard against double-processing (Idempotency-lite)
+        if (transaction.getStatus() == TransactionStatus.SUCCESS) {
+            throw new IllegalStateException("Transaction already completed");
+        }
+        if (transaction.getStatus() == TransactionStatus.FAILED) {
+            throw new IllegalStateException("Transaction already failed");
+        }
+
+        // Load the wallet
+        Wallet wallet = walletRepository.findByUserIdAndCurrency(
+                transaction.getUser().getId(),
+                transaction.getCurrency()
+        )
+                .orElseThrow(() -> new IllegalStateException("Wallet not found for user"));
+
+        // Credit Wallet
+        wallet.credit(transaction.getAmount());
         walletRepository.save(wallet);
 
-        // Build Response;
-        return FundWalletResponseDto.builder()
+        // Build response
+        return CompleteFundingResponseDto.builder()
                 .reference(reference)
                 .currency(wallet.getCurrency())
-                .amountInKobo(amount)
+                .amountInKobo(transaction.getAmount())
                 .newBalanceInKobo(wallet.getBalance())
                 .build();
+
     }
 }
