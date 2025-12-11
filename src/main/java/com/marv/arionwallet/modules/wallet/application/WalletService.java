@@ -58,18 +58,6 @@ public class WalletService {
                 .amountInKobo(amount)
                 .currency(wallet.getCurrency())
                 .build();
-
-//        // Credit wallet
-//        wallet.credit(amount);
-//        walletRepository.save(wallet);
-
-//        // Build Response;
-//        return FundWalletResponseDto.builder()
-//                .reference(reference)
-//                .currency(wallet.getCurrency())
-//                .amountInKobo(amount)
-//                .newBalanceInKobo(wallet.getBalance())
-//                .build();
     }
 
     @Transactional
@@ -93,6 +81,10 @@ public class WalletService {
                 transaction.getCurrency()
         )
                 .orElseThrow(() -> new IllegalStateException("Wallet not found for user"));
+
+        // Mark Transaction as Success
+        transaction.markSuccess();
+        transactionRepository.save(transaction);
 
         // Credit Wallet
         wallet.credit(transaction.getAmount());

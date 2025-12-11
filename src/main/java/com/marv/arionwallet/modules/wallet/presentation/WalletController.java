@@ -1,15 +1,15 @@
 package com.marv.arionwallet.modules.wallet.presentation;
 
 import com.marv.arionwallet.core.dto.ApiResponse;
+import com.marv.arionwallet.modules.transaction.application.TransactionService;
+import com.marv.arionwallet.modules.transaction.presentation.TransactionHistoryItemDto;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.wallet.application.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/wallets")
@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class WalletController {
 
     private final WalletService walletService;
+    private final TransactionService transactionService;
 
     @PostMapping("/fund")
     public ApiResponse<InitiateFundingResponseDto> initialFunding(
@@ -37,6 +38,21 @@ public class WalletController {
         CompleteFundingResponseDto response = walletService.completeFunding(request.getReference());
 
         return ApiResponse.ok("Funding completed successfully", response);
+    }
+
+    @GetMapping("/transactions")
+    public ApiResponse<Page<TransactionHistoryItemDto>> getMyTransactions(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+
+        // Get current user
+        User currentUser = (User) authentication.getPrincipal();
+
+        Page<TransactionHistoryItemDto> txPage = transactionService.getUserTransactions(currentUser, page, size);
+
+        return ApiResponse.ok("Transactions fetched successfully", txPage);
     }
 
 
