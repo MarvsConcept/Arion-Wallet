@@ -18,4 +18,8 @@ public interface TransactionRepository {
 
     Page<Transaction> findByUserIdAndTypeOrderByCreatedAtDesc(UUID userId, TransactionType type, Pageable pageable);
 
+    Page<Transaction> findByUserIdAndStatusOrderByCreatedAtDesc(UUID userId, TransactionStatus status, Pageable pageable);
+
+    Page<Transaction> findByUserIdAndTypeAndStatusOrderByCreatedAtDesc(UUID userId, TransactionType type, TransactionStatus status, Pageable pageable);
+
 }

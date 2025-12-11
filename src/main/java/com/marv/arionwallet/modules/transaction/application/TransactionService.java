@@ -2,6 +2,7 @@ package com.marv.arionwallet.modules.transaction.application;
 
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
+import com.marv.arionwallet.modules.transaction.domain.TransactionStatus;
 import com.marv.arionwallet.modules.transaction.domain.TransactionType;
 import com.marv.arionwallet.modules.transaction.presentation.TransactionHistoryItemDto;
 import com.marv.arionwallet.modules.user.domain.User;
@@ -17,7 +18,10 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
 
-    public Page<TransactionHistoryItemDto> getUserTransactions(User user, TransactionType type, int page, int size) {
+    public Page<TransactionHistoryItemDto> getUserTransactions(User user,
+                                                               TransactionType type,
+                                                               TransactionStatus status,
+                                                               int page, int size) {
 
         // Create a pageable
         Pageable pageable = PageRequest.of(page, size);
@@ -25,15 +29,24 @@ public class TransactionService {
         // Calls the repository for the current user and ordered
         Page<Transaction> txPage;
 
-        if (type == null) {
-            // Without filter will return all types
-            txPage = transactionRepository.
-                    findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
-        } else {
-            // With filter would return by types
-            txPage = transactionRepository.findByUserIdAndTypeOrderByCreatedAtDesc(user.getId(),type,pageable);
-        }
 
+        if (type != null && status != null) {
+            // If type and status is provided, filter by type and status
+            txPage = transactionRepository.findByUserIdAndTypeAndStatusOrderByCreatedAtDesc(
+                    user.getId(), type, status, pageable);
+        } else if (type != null) {
+            // If only type is provided, filter by status
+            txPage = transactionRepository.findByUserIdAndTypeOrderByCreatedAtDesc(
+                    user.getId(), type, pageable);
+        } else if (status != null) {
+            // If only status is provided, filter by status
+            txPage = transactionRepository.findByUserIdAndStatusOrderByCreatedAtDesc(
+                    user.getId(), status, pageable);
+        } else {
+            // If there's no filter, return all
+            txPage = transactionRepository.findByUserIdOrderByCreatedAtDesc(
+                    user.getId(), pageable);
+        }
 
         return  txPage.map(tx ->
                 TransactionHistoryItemDto.builder()
