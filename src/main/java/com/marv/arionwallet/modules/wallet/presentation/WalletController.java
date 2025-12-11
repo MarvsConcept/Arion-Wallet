@@ -10,8 +10,11 @@ import com.marv.arionwallet.modules.wallet.application.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1/wallets")
@@ -48,13 +51,15 @@ public class WalletController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) TransactionType type,
-            @RequestParam(required = false)TransactionStatus status
+            @RequestParam(required = false)TransactionStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate endDate
             ) {
 
         // Get current user
         User currentUser = (User) authentication.getPrincipal();
 
-        Page<TransactionHistoryItemDto> txPage = transactionService.getUserTransactions(currentUser, type, status, page, size);
+        Page<TransactionHistoryItemDto> txPage = transactionService.getUserTransactions(currentUser, type, status, startDate, endDate, page, size);
 
         return ApiResponse.ok("Transactions fetched successfully", txPage);
     }

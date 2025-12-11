@@ -3,6 +3,7 @@ package com.marv.arionwallet.modules.transaction.domain;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,4 +23,11 @@ public interface TransactionRepository {
 
     Page<Transaction> findByUserIdAndTypeAndStatusOrderByCreatedAtDesc(UUID userId, TransactionType type, TransactionStatus status, Pageable pageable);
 
+    Page<Transaction> findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(UUID userId, Instant start, Instant end, Pageable pageable);
 }
+
+
+
+
+
+

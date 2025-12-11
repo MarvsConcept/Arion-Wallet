@@ -12,6 +12,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
@@ -21,6 +26,8 @@ public class TransactionService {
     public Page<TransactionHistoryItemDto> getUserTransactions(User user,
                                                                TransactionType type,
                                                                TransactionStatus status,
+                                                               LocalDate startDate,
+                                                               LocalDate endDate,
                                                                int page, int size) {
 
         // Create a pageable
@@ -30,7 +37,19 @@ public class TransactionService {
         Page<Transaction> txPage;
 
 
-        if (type != null && status != null) {
+        if (startDate != null || endDate != null) {
+            ZoneId zone = ZoneOffset.UTC;
+
+            Instant startInstant = (startDate != null)
+                    ? startDate.atStartOfDay(zone).toInstant()
+                    : Instant.EPOCH;
+
+            Instant endInstant = (endDate != null)
+                    ? endDate.plusDays(1).atStartOfDay(zone).toInstant()
+                    : Instant.now();
+            txPage = transactionRepository.findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+                    user.getId(), startInstant, endInstant, pageable);
+        } else if (type != null && status != null) {
             // If type and status is provided, filter by type and status
             txPage = transactionRepository.findByUserIdAndTypeAndStatusOrderByCreatedAtDesc(
                     user.getId(), type, status, pageable);
@@ -58,6 +77,5 @@ public class TransactionService {
                         .description(tx.getDescription())
                         .createdAt(tx.getCreatedAt())
                         .build());
-
     }
 }
