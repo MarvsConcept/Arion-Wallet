@@ -2,6 +2,7 @@ package com.marv.arionwallet.modules.wallet.presentation;
 
 import com.marv.arionwallet.core.dto.ApiResponse;
 import com.marv.arionwallet.modules.transaction.application.TransactionService;
+import com.marv.arionwallet.modules.transaction.domain.TransactionType;
 import com.marv.arionwallet.modules.transaction.presentation.TransactionHistoryItemDto;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.wallet.application.WalletService;
@@ -44,13 +45,14 @@ public class WalletController {
     public ApiResponse<Page<TransactionHistoryItemDto>> getMyTransactions(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) TransactionType type
+            ) {
 
         // Get current user
         User currentUser = (User) authentication.getPrincipal();
 
-        Page<TransactionHistoryItemDto> txPage = transactionService.getUserTransactions(currentUser, page, size);
+        Page<TransactionHistoryItemDto> txPage = transactionService.getUserTransactions(currentUser, type, page, size);
 
         return ApiResponse.ok("Transactions fetched successfully", txPage);
     }

@@ -16,5 +16,6 @@ public interface TransactionRepository {
 
     Page<Transaction> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
+    Page<Transaction> findByUserIdAndTypeOrderByCreatedAtDesc(UUID userId, TransactionType type, Pageable pageable);
 
 }

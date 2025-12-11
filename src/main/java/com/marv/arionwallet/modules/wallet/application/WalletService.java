@@ -82,13 +82,14 @@ public class WalletService {
         )
                 .orElseThrow(() -> new IllegalStateException("Wallet not found for user"));
 
+        // Credit Wallet
+        wallet.credit(transaction.getAmount());
+        walletRepository.save(wallet);
+
         // Mark Transaction as Success
         transaction.markSuccess();
         transactionRepository.save(transaction);
 
-        // Credit Wallet
-        wallet.credit(transaction.getAmount());
-        walletRepository.save(wallet);
 
         // Build response
         return CompleteFundingResponseDto.builder()
