@@ -54,7 +54,7 @@ public class TransactionService {
             txPage = transactionRepository.findByUserIdAndTypeAndStatusOrderByCreatedAtDesc(
                     user.getId(), type, status, pageable);
         } else if (type != null) {
-            // If only type is provided, filter by status
+            // If only type is provided, filter by type
             txPage = transactionRepository.findByUserIdAndTypeOrderByCreatedAtDesc(
                     user.getId(), type, pageable);
         } else if (status != null) {

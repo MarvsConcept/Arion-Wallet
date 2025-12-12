@@ -1,5 +1,9 @@
 package com.marv.arionwallet.modules.wallet.application;
 
+import com.marv.arionwallet.modules.ledger.domain.LedgerAccountType;
+import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
+import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
+import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.transaction.domain.TransactionStatus;
@@ -22,6 +26,7 @@ public class WalletService {
 
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
+    private final LedgerEntryRepository ledgerEntryRepository;
 
     @Transactional
     public InitiateFundingResponseDto initiateFunding(User currentUser, FundWalletRequestDto request) {
@@ -82,14 +87,39 @@ public class WalletService {
         )
                 .orElseThrow(() -> new IllegalStateException("Wallet not found for user"));
 
-        // Credit Wallet
-        wallet.credit(transaction.getAmount());
-        walletRepository.save(wallet);
-
         // Mark Transaction as Success
         transaction.markSuccess();
         transactionRepository.save(transaction);
 
+        // Credit Wallet
+        wallet.credit(transaction.getAmount());
+        walletRepository.save(wallet);
+
+        // Create External Ledger Entry
+        LedgerEntry externalEntry = LedgerEntry.builder()
+                .transaction(transaction)
+                .user(transaction.getUser())
+                .wallet(null)
+                .accountType(LedgerAccountType.EXTERNAL_FUNDING)
+                .direction(LedgerEntryDirection.DEBIT)
+                .amount(transaction.getAmount())
+                .currency(transaction.getCurrency())
+                .build();
+
+        // Create Wallet Ledger Entry
+        LedgerEntry walletEntry = LedgerEntry.builder()
+                .transaction(transaction)
+                .user(transaction.getUser())
+                .wallet(wallet)
+                .accountType(LedgerAccountType.USER_WALLET)
+                .direction(LedgerEntryDirection.CREDIT)
+                .amount(transaction.getAmount())
+                .currency(transaction.getCurrency())
+                .build();
+
+        // Save Ledger
+        ledgerEntryRepository.save(externalEntry);
+        ledgerEntryRepository.save(walletEntry);
 
         // Build response
         return CompleteFundingResponseDto.builder()
