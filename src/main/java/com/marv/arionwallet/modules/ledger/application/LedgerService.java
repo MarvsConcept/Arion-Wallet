@@ -30,7 +30,7 @@ public class LedgerService {
             throw new IllegalArgumentException("No ledger entries found for reference");
         }
 
-        List<LedgerEntryDto> dtos = new ArrayList<>();
+//        List<LedgerEntryDto> dtos = new ArrayList<>();
 
         //List
 //        for (LedgerEntry e : entries) {
@@ -61,4 +61,6 @@ public class LedgerService {
                         .build())
                 .toList();
     }
+
 }
+
