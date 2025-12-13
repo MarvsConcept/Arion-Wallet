@@ -34,6 +34,7 @@ public class UserController {
                 .phone(currentUser.getPhone())
                 .firstName(currentUser.getFirstName())
                 .lastName(currentUser.getLastName())
+                .accountNumber(currentUser.getAccountNumber())
                 .status(currentUser.getStatus())
                 .kycLevel(currentUser.getKycLevel())
                 .createdAt(currentUser.getCreatedAt())

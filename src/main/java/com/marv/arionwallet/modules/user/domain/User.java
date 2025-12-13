@@ -31,6 +31,9 @@ public class User {
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
+    @Column(name = "account_number", unique = true, nullable = false, updatable = false)
+    private String accountNumber;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private UserStatus status;
@@ -52,6 +55,7 @@ public class User {
                  String passwordHash,
                  String firstName,
                  String lastName,
+                 String accountNumber,
                  UserStatus status,
                  KycLevel kycLevel,
                  Instant createdAt,
@@ -64,6 +68,7 @@ public class User {
         this.passwordHash = passwordHash;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.accountNumber = accountNumber;
         this.status = (status != null) ? status : UserStatus.ACTIVE;
         this.kycLevel = (kycLevel != null) ? kycLevel : KycLevel.NONE;
         this.createdAt = (createdAt != null) ? createdAt : now;

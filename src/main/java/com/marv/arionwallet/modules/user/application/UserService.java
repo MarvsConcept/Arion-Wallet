@@ -19,6 +19,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final WalletRepository walletRepository;
+    private final AccountNumberGenerator accountNumberGenerator;
 
 
     @Transactional
@@ -37,6 +38,11 @@ public class UserService {
         // Hash the password
         String hashedPassword = passwordEncoder.encode(request.getPassword());
 
+
+        // Generate account number
+        String accountNumber = accountNumberGenerator.generateUniqueAccountNumber();
+
+
         // Create User entity with builder
         User user = User.builder()
                 .email(request.getEmail())
@@ -44,7 +50,9 @@ public class UserService {
                 .passwordHash(hashedPassword)
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
+                .accountNumber(accountNumber)
                 .build();
+
 
         // Save to the database
         User savedUser = userRepository.save(user);
@@ -64,6 +72,7 @@ public class UserService {
                 .phone(savedUser.getPhone())
                 .firstName(savedUser.getFirstName())
                 .lastName(savedUser.getLastName())
+                .accountNumber(savedUser.getAccountNumber())
                 .status(savedUser.getStatus())
                 .kycLevel(savedUser.getKycLevel())
                 .createdAt(savedUser.getCreatedAt())
@@ -80,6 +89,7 @@ public class UserService {
                 .userId(currentUser.getId())
                 .firstName(currentUser.getFirstName())
                 .lastName(currentUser.getLastName())
+                .accountNumber(currentUser.getAccountNumber())
                 .email(currentUser.getEmail())
                 .phone(currentUser.getPhone())
                 .status(currentUser.getStatus())

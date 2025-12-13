@@ -20,6 +20,7 @@ public class UserResponseDto {
     private String phone;
     private String firstName;
     private String lastName;
+    private String accountNumber;
     private UserStatus status;
     private KycLevel kycLevel;
     private Instant createdAt;

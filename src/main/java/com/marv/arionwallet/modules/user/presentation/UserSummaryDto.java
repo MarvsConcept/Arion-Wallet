@@ -16,6 +16,7 @@ public class UserSummaryDto {
     private UUID userId;
     private String firstName;
     private String lastName;
+    private String accountNumber;
     private String email;
     private String phone;
     private UserStatus status;
