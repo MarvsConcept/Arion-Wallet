@@ -31,7 +31,7 @@ public class User {
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @Column(name = "account_number", unique = true, nullable = false, updatable = false)
+    @Column(name = "account_number", unique = true, nullable = false, updatable = false, length = 10)
     private String accountNumber;
 
     @Enumerated(EnumType.STRING)
