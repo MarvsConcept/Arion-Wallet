@@ -24,6 +24,8 @@ public interface TransactionRepository {
     Page<Transaction> findByUserIdAndTypeAndStatusOrderByCreatedAtDesc(UUID userId, TransactionType type, TransactionStatus status, Pageable pageable);
 
     Page<Transaction> findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(UUID userId, Instant start, Instant end, Pageable pageable);
+
+    Optional<Transaction> findByUserIdAndIdempotencyKey(UUID userId, String idempotencyKey);
 }
 
 

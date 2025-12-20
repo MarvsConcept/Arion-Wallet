@@ -33,7 +33,7 @@ public class TransferService {
     private final LedgerEntryRepository ledgerEntryRepository;
 
     @Transactional
-    public TransferResponseDto transfer(User sender, TransferRequestDto request) {
+    public TransferResponseDto transfer(User sender, TransferRequestDto request, String idempotencyKey) {
 
         // Currency is NGN
         if (!request.getCurrency().trim().equalsIgnoreCase("NGN")) {
@@ -50,12 +50,42 @@ public class TransferService {
         }
 
         // Load Sender Wallet
-        Wallet senderWallet = walletRepository.findByUserIdAndCurrency(sender.getId(), "NGN")
+        Wallet senderWallet = walletRepository.findByUserIdAndCurrencyForUpdate(sender.getId(), "NGN")
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
 
         // Load recipient wallet
         Wallet recipientWallet = walletRepository.findByUserIdAndCurrency(recipient.getId(), "NGN")
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+
+        // Narration
+        String narration = request.getNarration();
+        if (narration == null || narration.isBlank()) {
+            narration = "P2P Transfer";
+        }
+
+        // Idempotency Check
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            Optional<Transaction> existingTx = transactionRepository.findByUserIdAndIdempotencyKey(sender.getId(),idempotencyKey);
+
+            if (existingTx.isPresent()) {
+
+                Transaction tx = existingTx.get();
+
+                return TransferResponseDto.builder()
+                        .reference(tx.getReference())
+                        .amountInKobo(tx.getAmount())
+                        .currency(tx.getCurrency())
+                        .senderFullName("From: " + sender.getFirstName() + " " + sender.getLastName())
+                        .senderAccountNumber(sender.getAccountNumber())
+                        .recipientFullName("To: " + recipient.getFirstName() + " " + recipient.getLastName())
+                        .recipientAccountNumber(recipient.getAccountNumber())
+                        .senderNewBalance(senderWallet.getBalance())
+                        .recipientNewBalance(recipientWallet.getBalance())
+                        .narration(tx.getDescription())
+                        .createdAt(tx.getCreatedAt())
+                        .build();
+            }
+        }
 
         // Sender Balance is greater then amount
         if (senderWallet.getBalance() < request.getAmountInKobo()) {
@@ -70,19 +100,26 @@ public class TransferService {
                 .amount(request.getAmountInKobo())
                 .currency(request.getCurrency())
                 .reference(reference)
-                .description(request.getNarration())
+                .description(narration)
+                .idempotencyKey(idempotencyKey)
                 .type(TransactionType.TRANSFER)
                 .status(TransactionStatus.SUCCESS)
                 .build();
 
-        transactionRepository.save(transaction);
+        // Save the transaction
+        transaction = transactionRepository.save(transaction);
 
+        // Debit the sender
         senderWallet.debit(request.getAmountInKobo());
+
+        // Credit the recipient
         recipientWallet.credit(request.getAmountInKobo());
 
+        // Save to wallet
         walletRepository.save(senderWallet);
         walletRepository.save(recipientWallet);
 
+        // Created Ledger Entry using the saved transaction
         LedgerEntry debitWalletEntry = LedgerEntry.builder()
                 .transaction(transaction)
                 .user(sender)
@@ -103,6 +140,7 @@ public class TransferService {
                 .currency(transaction.getCurrency())
                 .build();
 
+        // Save Ledger Entry
         ledgerEntryRepository.save(debitWalletEntry);
         ledgerEntryRepository.save(creditWalletEntry);
 
@@ -117,7 +155,8 @@ public class TransferService {
                 .recipientAccountNumber(request.getRecipientAccountNumber())
                 .senderNewBalance(senderWallet.getBalance())
                 .recipientNewBalance(recipientWallet.getBalance())
-                .narration(request.getNarration())
+                .narration(narration)
+                .createdAt(transaction.getCreatedAt())
                 .build();
     }
 }

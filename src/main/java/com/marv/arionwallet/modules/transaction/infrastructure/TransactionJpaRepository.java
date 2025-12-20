@@ -14,7 +14,4 @@ public interface TransactionJpaRepository extends JpaRepository<Transaction, UUI
     @Override
     Optional<Transaction> findByReference(String reference);
 
-//    @Override
-//    Page<Transaction> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
-
 }

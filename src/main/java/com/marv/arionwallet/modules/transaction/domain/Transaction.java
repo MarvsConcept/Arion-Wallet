@@ -46,6 +46,9 @@ public class Transaction {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "idempotency_key")
+    private String idempotencyKey;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -62,6 +65,7 @@ public class Transaction {
                        String currency,
                        String reference,
                        String description,
+                       String idempotencyKey,
                        Instant createdAt,
                        Instant updatedAt) {
         Instant now = Instant.now();
@@ -73,6 +77,7 @@ public class Transaction {
         this.currency = currency;
         this.reference = reference;
         this.description = description;
+        this.idempotencyKey = idempotencyKey;
         this.createdAt = createdAt != null ? createdAt : now;
         this.updatedAt = updatedAt != null ? updatedAt : now;
     }

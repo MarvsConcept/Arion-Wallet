@@ -89,7 +89,7 @@ public class WalletService {
 
         // Mark Transaction as Success
         transaction.markSuccess();
-        transactionRepository.save(transaction);
+        transaction = transactionRepository.save(transaction);
 
         // Credit Wallet
         wallet.credit(transaction.getAmount());
