@@ -2,6 +2,7 @@ package com.marv.arionwallet.modules.transaction.domain;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -26,6 +27,17 @@ public interface TransactionRepository {
     Page<Transaction> findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(UUID userId, Instant start, Instant end, Pageable pageable);
 
     Optional<Transaction> findByUserIdAndIdempotencyKey(UUID userId, String idempotencyKey);
+
+    @Query("""
+    SELECT COALESCE(SUM(t.amount), 0)
+    FROM Transaction t
+    WHERE t.user.id = :userId
+      AND t.type = com.marv.arionwallet.modules.transaction.domain.TransactionType.TRANSFER
+      AND t.status = com.marv.arionwallet.modules.transaction.domain.TransactionStatus.SUCCESS
+      AND t.createdAt >= :start
+      AND t.createdAt < :end
+""")
+    long sumSuccessfulTransfersForUserBetween(UUID userId, Instant start, Instant end);
 }
 
 

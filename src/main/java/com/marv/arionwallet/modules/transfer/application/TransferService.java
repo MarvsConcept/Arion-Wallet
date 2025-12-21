@@ -4,6 +4,7 @@ import com.marv.arionwallet.modules.ledger.domain.LedgerAccountType;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
+import com.marv.arionwallet.modules.risk.application.FraudService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.transaction.domain.TransactionStatus;
@@ -31,6 +32,7 @@ public class TransferService {
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final FraudService fraudService;
 
     @Transactional
     public TransferResponseDto transfer(User sender, TransferRequestDto request, String idempotencyKey) {
@@ -86,6 +88,8 @@ public class TransferService {
                         .build();
             }
         }
+
+        fraudService.validateTransfer(sender, request.getAmountInKobo());
 
         // Sender Balance is greater then amount
         if (senderWallet.getBalance() < request.getAmountInKobo()) {

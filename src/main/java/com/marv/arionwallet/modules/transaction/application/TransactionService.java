@@ -36,7 +36,6 @@ public class TransactionService {
         // Calls the repository for the current user and ordered
         Page<Transaction> txPage;
 
-
         if (startDate != null || endDate != null) {
             ZoneId zone = ZoneOffset.UTC;
 
