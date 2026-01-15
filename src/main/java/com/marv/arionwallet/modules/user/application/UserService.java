@@ -38,7 +38,6 @@ public class UserService {
         // Hash the password
         String hashedPassword = passwordEncoder.encode(request.getPassword());
 
-
         // Generate account number
         String accountNumber = accountNumberGenerator.generateUniqueAccountNumber();
 

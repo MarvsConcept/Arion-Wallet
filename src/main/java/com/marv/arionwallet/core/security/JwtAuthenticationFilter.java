@@ -51,6 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Extract Id from token
                 UUID userId = jwtService.extractUserId(token);
 
+                // Load users from the database
                 User user = userRepository.findById(userId)
                         .orElseThrow(null);
 

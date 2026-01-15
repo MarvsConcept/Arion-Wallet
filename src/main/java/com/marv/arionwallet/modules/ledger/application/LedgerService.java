@@ -49,6 +49,7 @@ public class LedgerService {
 //        return dtos;
 //    }
 
+
         // Stream - Shorter
         return entries.stream()
                 .map(e -> LedgerEntryDto.builder()

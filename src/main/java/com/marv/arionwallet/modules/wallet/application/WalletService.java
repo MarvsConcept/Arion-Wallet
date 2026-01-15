@@ -42,7 +42,10 @@ public class WalletService {
         }
 
         // Generate payment reference
-        String reference = "FUND-" + UUID.randomUUID().toString().replace("_", "").substring(0, 12);
+        String reference = "FUND-" + UUID.randomUUID()
+                .toString()
+                .replace("_", "")
+                .substring(0, 12);
 
         // Create PENDING transaction
         Transaction transaction = Transaction.builder()

@@ -1,4 +1,4 @@
-package com.marv.arionwallet.modules.risk.domain.TransferLimit;
+package com.marv.arionwallet.modules.risk.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

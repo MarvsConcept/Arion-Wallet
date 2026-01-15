@@ -42,14 +42,14 @@ public class TransferService {
             throw new IllegalArgumentException("Only NGN is supported");
         }
 
+        // Amount Validation
+        if (request.getAmountInKobo() <= 0) {
+            throw new IllegalArgumentException("Transfer amount must be greater than zero");
+        }
+
         // Load Recipient by Account Number
         User recipient = userRepository.findByAccountNumber(request.getRecipientAccountNumber())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        // Prevent transfer to self
-        if (sender.getId().equals(recipient.getId())) {
-            throw new IllegalArgumentException("Cannot transfer to self");
-        }
 
         // Load Sender Wallet
         Wallet senderWallet = walletRepository.findByUserIdAndCurrencyForUpdate(sender.getId(), "NGN")

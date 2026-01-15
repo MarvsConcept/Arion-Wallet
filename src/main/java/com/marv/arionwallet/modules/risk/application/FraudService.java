@@ -1,6 +1,6 @@
 package com.marv.arionwallet.modules.risk.application;
 
-import com.marv.arionwallet.modules.risk.domain.TransferLimit.TransferLimit;
+import com.marv.arionwallet.modules.risk.domain.TransferLimit;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.user.domain.KycLevel;
 import com.marv.arionwallet.modules.user.domain.User;
@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 @Service
