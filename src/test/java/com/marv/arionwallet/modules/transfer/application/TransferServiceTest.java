@@ -278,6 +278,35 @@ public class TransferServiceTest {
     }
 
     @Test
+    void transfer_shouldThrow_whenCurrencyNotNGN_andNotCallDependencies() {
+        User sender = User.builder()
+                .id(UUID.randomUUID())
+                .firstName("Test")
+                .lastName("User")
+                .accountNumber("2900000011")
+                .build();
+
+        TransferRequestDto request = new TransferRequestDto();
+        request.setRecipientAccountNumber("2900000022");
+        request.setAmountInKobo(200_000L);
+        request.setCurrency("USD");
+        request.setNarration("P2P Transfer");
+
+        // ACT
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> transferService.transfer(sender, request, null)
+        );
+
+        // ASSERT
+        assertEquals("Only NGN is supported", ex.getMessage());
+
+        // Verify nothing else was called
+        verifyNoInteractions(userRepository, walletRepository, transactionRepository, ledgerEntryRepository, fraudService);
+    }
+
+
+    @Test
     void transfer_shouldSucceed_andMoveMoney_andWriteLedger() {
 
         // Arrange
