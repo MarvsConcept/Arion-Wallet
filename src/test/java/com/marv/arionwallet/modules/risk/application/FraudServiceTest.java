@@ -123,7 +123,7 @@ public class FraudServiceTest {
         assertDoesNotThrow(() -> fraudService.validateTransfer(user, amount));
 
         verify(transactionRepository, times(1))
-                .sumSuccessfulTransfersForUserBetween(eq(userId), any(Instant.class), any(Instant.class));
+                .sumSuccessfulTransfersForUserBetween(eq(user.getId()), any(Instant.class), any(Instant.class));
 
     }
 

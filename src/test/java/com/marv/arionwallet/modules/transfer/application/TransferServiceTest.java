@@ -201,6 +201,78 @@ public class TransferServiceTest {
         //verify
         verify(fraudService, times(1)).validateTransfer(sender, request.getAmountInKobo());
 
+    }
+
+    @Test
+    void transfer_shouldThrow_whenFraudBlocks_andNotSaveAnything() {
+
+        //Arrange
+        // Create Sender
+        User sender = User.builder()
+                .id(UUID.randomUUID())
+                .firstName("Test")
+                .lastName("User")
+                .accountNumber("2900000011")
+                .build();
+
+        // Create recipient
+        User recipient = User.builder()
+                .id(UUID.randomUUID())
+                .accountNumber("2999990001")
+                .build();
+
+        // Create transfer Request
+        TransferRequestDto request = new TransferRequestDto();
+        request.setRecipientAccountNumber(recipient.getAccountNumber());
+        request.setAmountInKobo(200_000L);
+        request.setCurrency("NGN");
+        request.setNarration("P2P Transfer");
+
+        // Create Sender Wallet
+        Wallet senderWallet = Wallet.builder()
+                .balance(1_000_000L)
+                .build();
+
+        // Create Recipient Wallet
+        Wallet recipientWallet = Wallet.builder()
+                .balance(300_000L)
+                .build();
+
+        when(userRepository.findByAccountNumber(recipient.getAccountNumber()))
+                .thenReturn(Optional.of(recipient));
+
+        when(walletRepository.findByUserIdAndCurrencyForUpdate(sender.getId(), "NGN"))
+                .thenReturn(Optional.of(senderWallet));
+
+        when(walletRepository.findByUserIdAndCurrency(recipient.getId(), "NGN"))
+                .thenReturn(Optional.of(recipientWallet));
+
+        doThrow(new IllegalArgumentException("Daily transfer limit exceeded for your KYC level"))
+                .when(fraudService)
+                .validateTransfer(sender, request.getAmountInKobo());
+
+        // ACT
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> transferService.transfer(sender, request, null)
+        );
+
+        // ASSERT
+        assertEquals("Daily transfer limit exceeded for your KYC level", ex.getMessage());
+
+
+        //Verify
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(walletRepository, never()).save(any(Wallet.class));
+        verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
+
+        verify(fraudService, times(1)).validateTransfer(sender, request.getAmountInKobo());
+
+        verify(walletRepository, times(1))
+                .findByUserIdAndCurrencyForUpdate(sender.getId(), "NGN");
+        verify(walletRepository, times(1))
+                .findByUserIdAndCurrency(recipient.getId(), "NGN");
+
 
     }
 
