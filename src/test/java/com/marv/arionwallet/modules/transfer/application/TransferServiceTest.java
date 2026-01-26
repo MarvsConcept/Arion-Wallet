@@ -1,6 +1,7 @@
 package com.marv.arionwallet.modules.transfer.application;
 
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
+import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
 import com.marv.arionwallet.modules.risk.application.FraudService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
@@ -14,15 +15,17 @@ import com.marv.arionwallet.modules.wallet.domain.WalletRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -272,8 +275,96 @@ public class TransferServiceTest {
                 .findByUserIdAndCurrencyForUpdate(sender.getId(), "NGN");
         verify(walletRepository, times(1))
                 .findByUserIdAndCurrency(recipient.getId(), "NGN");
+    }
+
+    @Test
+    void transfer_shouldSucceed_andMoveMoney_andWriteLedger() {
+
+        // Arrange
+        User sender = User.builder()
+                .id(UUID.randomUUID())
+                .firstName("Test")
+                .lastName("User")
+                .accountNumber("2900000011")
+                .build();
+
+        User recipient = User.builder()
+                .id(UUID.randomUUID())
+                .firstName("Test2")
+                .lastName("user2")
+                .accountNumber("2900000022")
+                .build();
+
+        // Create transfer Request
+        TransferRequestDto request = new TransferRequestDto();
+        request.setRecipientAccountNumber(recipient.getAccountNumber());
+        request.setAmountInKobo(200_000L);
+        request.setCurrency("NGN");
+        request.setNarration("P2P Transfer");
+
+        // Create wallets
+        Wallet senderWallet = Wallet.builder()
+                .balance(1_000_000L)
+                .build();
+
+        Wallet recipientWallet = Wallet.builder()
+                .balance(300_000L)
+                .build();
+
+        // Mocks
+        when(userRepository.findByAccountNumber(recipient.getAccountNumber()))
+                .thenReturn(Optional.of(recipient));
+
+        when(walletRepository.findByUserIdAndCurrencyForUpdate(sender.getId(), "NGN"))
+                .thenReturn(Optional.of(senderWallet));
+
+        when(walletRepository.findByUserIdAndCurrency(recipient.getId(), "NGN"))
+                .thenReturn(Optional.of(recipientWallet));
+
+        doNothing().when(fraudService).validateTransfer(sender, request.getAmountInKobo());
+
+        when(transactionRepository.save(any(Transaction.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
 
 
+        // ACT
+        TransferResponseDto response = transferService.transfer(sender, request, null);
+
+        assertEquals(800_000L, senderWallet.getBalance());
+        assertEquals(500_000L, recipientWallet.getBalance());
+
+        assertEquals(800_000L, response.getSenderNewBalance());
+        assertEquals(500_000L, response.getRecipientNewBalance());
+
+        // Verify saves happened
+        verify(transactionRepository, times(1)).save(any(Transaction.class));
+        verify(walletRepository, times(2)).save(any(Wallet.class));
+        verify(ledgerEntryRepository, times(2)).save(any(LedgerEntry.class));
+
+        verify(fraudService, times(1)).validateTransfer(sender, request.getAmountInKobo());
+
+        // Check Ledger entries are correct(Debit + Credit
+        ArgumentCaptor<LedgerEntry> captor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, times(2)).save(captor.capture());
+
+        List<LedgerEntry> savedEntries = captor.getAllValues();
+        assertEquals(2, savedEntries.size());
+
+        boolean hasDebit = savedEntries.stream().anyMatch(e ->
+                e.getDirection() == LedgerEntryDirection.DEBIT &&
+                        e.getUser().equals(sender) &&
+                        Objects.equals(e.getAmount(), 200_000L)
+
+        );
+
+        boolean hasCredit = savedEntries.stream().anyMatch(e ->
+                e.getDirection() == LedgerEntryDirection.CREDIT &&
+                        e.getUser().equals(recipient) &&
+                        Objects.equals(e.getAmount(), 200_000L)
+        );
+
+        assertTrue(hasDebit);
+        assertTrue(hasCredit);
     }
 
 }
