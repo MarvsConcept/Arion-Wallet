@@ -36,12 +36,14 @@ public class FraudService {
         Instant startInstant = today.atStartOfDay(ZoneOffset.UTC).toInstant();
         Instant endInstant = today.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 
-       long todayTotal = transactionRepository.sumSuccessfulTransfersForUserBetween(user.getId(), startInstant, endInstant);
+       long todayTotal = transactionRepository.sumSuccessfulTransfersForUserBetween(
+               user.getId(), startInstant, endInstant);
 
         // Check daily transfer limit
        if (todayTotal + amountInKobo > limit.getMaxDailyInKobo()) {
            throw new IllegalArgumentException("Daily transfer limit exceeded for your KYC level");
        }
+
     }
 
     private TransferLimit getLimitsFor(KycLevel level) {

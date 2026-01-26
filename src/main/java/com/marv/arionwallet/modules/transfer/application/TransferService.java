@@ -70,7 +70,6 @@ public class TransferService {
             Optional<Transaction> existingTx = transactionRepository.findByUserIdAndIdempotencyKey(sender.getId(),idempotencyKey);
 
             if (existingTx.isPresent()) {
-
                 Transaction tx = existingTx.get();
 
                 return TransferResponseDto.builder()
@@ -99,6 +98,7 @@ public class TransferService {
         // Generate payment reference
         String reference = "TX-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
 
+        // Build Transaction
         Transaction transaction = Transaction.builder()
                 .user(sender)
                 .amount(request.getAmountInKobo())

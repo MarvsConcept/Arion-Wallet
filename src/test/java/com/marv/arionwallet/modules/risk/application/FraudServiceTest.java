@@ -9,8 +9,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.time.Instant;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class FraudServiceTest {
@@ -52,7 +57,10 @@ public class FraudServiceTest {
     @Test
     void validateTransfer_shouldThrow_whenDailyLimitExceeded() {
 
+        UUID userId = UUID.randomUUID();
+
         User user = User.builder()
+                .id(userId)
                 .email("test@example.com")
                 .phone("08000000000")
                 .passwordHash("hashed")
@@ -62,7 +70,61 @@ public class FraudServiceTest {
                 .kycLevel(KycLevel.BASIC)
                 .build();
 
-        long todayTotal = 299_900_0000L;
+        long todayTotal = 4_900_000L;
         long amount = 200_000L;
+
+        when(transactionRepository.sumSuccessfulTransfersForUserBetween(
+                eq(user.getId()),
+                any(Instant.class),
+                any(Instant.class)
+        )).thenReturn(todayTotal);
+
+        // Act + Assert
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> fraudService.validateTransfer(user, amount)
+        );
+
+        assertEquals("Daily transfer limit exceeded for your KYC level", ex.getMessage());
+
+        // verify repo was queried exactly once
+        verify(transactionRepository, times(1)).sumSuccessfulTransfersForUserBetween(
+                eq(user.getId()),
+                any(Instant.class),
+                any(Instant.class)
+        );
     }
+
+    @Test
+    void validateTransfer_shouldNotThrow_whenWithinDailyLimit() {
+
+        UUID userId = UUID.randomUUID();
+
+        User user = User.builder()
+                .id(userId)
+                .email("test@example.com")
+                .phone("08000000000")
+                .passwordHash("hashed")
+                .firstName("Test")
+                .lastName("User")
+                .accountNumber("2999990000")
+                .kycLevel(KycLevel.BASIC)
+                .build();
+
+        long todayTotal = 4_000_000L;
+        long amount = 200_000L;
+
+        when(transactionRepository.sumSuccessfulTransfersForUserBetween(
+                eq(user.getId()),
+                any(Instant.class),
+                any(Instant.class)
+        )).thenReturn(todayTotal);
+
+        assertDoesNotThrow(() -> fraudService.validateTransfer(user, amount));
+
+        verify(transactionRepository, times(1))
+                .sumSuccessfulTransfersForUserBetween(eq(userId), any(Instant.class), any(Instant.class));
+
+    }
+
 }
