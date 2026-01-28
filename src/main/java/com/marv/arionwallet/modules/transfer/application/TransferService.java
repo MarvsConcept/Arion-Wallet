@@ -67,7 +67,7 @@ public class TransferService {
 
         // Idempotency Check
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
-            Optional<Transaction> existingTx = transactionRepository.findByUserIdAndIdempotencyKey(sender.getId(),idempotencyKey);
+            Optional<Transaction> existingTx = transactionRepository.findByUserIdAndIdempotencyKeyAndType(sender.getId(),idempotencyKey, TransactionType.TRANSFER);
 
             if (existingTx.isPresent()) {
                 Transaction tx = existingTx.get();
@@ -150,7 +150,7 @@ public class TransferService {
 
 
         return TransferResponseDto.builder()
-                .reference(reference)
+                .reference(transaction.getReference())
                 .amountInKobo(request.getAmountInKobo())
                 .currency(request.getCurrency())
                 .senderFullName("From: " + sender.getFirstName() + " " + sender.getLastName())

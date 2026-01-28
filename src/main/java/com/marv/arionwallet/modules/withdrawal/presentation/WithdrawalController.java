@@ -22,17 +22,13 @@ public class WithdrawalController {
     @PostMapping
     public ApiResponse<WithdrawalResponseDto> withdraw(
             Authentication authentication,
-            @RequestHeader(value = "Idempotency-key", required = false) String idempotencyKey,
+            @RequestHeader(value = "Idempotency-key") String idempotencyKey,
             @Valid @RequestBody WithdrawalRequestDto request) {
 
         User currentUser = (User) authentication.getPrincipal();
 
         WithdrawalResponseDto response = withdrawalService.requestWithdrawal(currentUser, request, idempotencyKey);
 
-        return ApiResponse.ok("Withdrawal Successful", response);
+        return ApiResponse.ok("Withdrawal initiated successfully", response);
     }
-
-
 }
-
-

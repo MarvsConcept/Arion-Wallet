@@ -26,7 +26,7 @@ public interface TransactionRepository {
 
     Page<Transaction> findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(UUID userId, Instant start, Instant end, Pageable pageable);
 
-    Optional<Transaction> findByUserIdAndIdempotencyKey(UUID userId, String idempotencyKey);
+    Optional<Transaction> findByUserIdAndIdempotencyKeyAndType(UUID userId, String idempotencyKey, TransactionType type);
 
     @Query("""
     SELECT COALESCE(SUM(t.amount), 0)

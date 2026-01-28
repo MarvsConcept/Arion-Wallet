@@ -6,6 +6,7 @@ import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
 import com.marv.arionwallet.modules.risk.application.FraudService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
+import com.marv.arionwallet.modules.transaction.domain.TransactionType;
 import com.marv.arionwallet.modules.transfer.presentation.TransferRequestDto;
 import com.marv.arionwallet.modules.transfer.presentation.TransferResponseDto;
 import com.marv.arionwallet.modules.user.domain.User;
@@ -78,7 +79,7 @@ public class TransferServiceTest {
                 .build();
 
         // Tell Mockito to return the existing transaction
-        when(transactionRepository.findByUserIdAndIdempotencyKey(user.getId(), idempotencyKey))
+        when(transactionRepository.findByUserIdAndIdempotencyKeyAndType(user.getId(), idempotencyKey, TransactionType.TRANSFER))
                 .thenReturn(Optional.of(existingTx));
 
         // ACT - Calling the method i want to test
@@ -137,7 +138,7 @@ public class TransferServiceTest {
 
         // Verify idempotency lookup was actually used
         verify(transactionRepository, times(1))
-                .findByUserIdAndIdempotencyKey(user.getId(), idempotencyKey);
+                .findByUserIdAndIdempotencyKeyAndType(user.getId(), idempotencyKey, TransactionType.TRANSFER);
 
     }
 

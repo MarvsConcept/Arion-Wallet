@@ -1,9 +1,9 @@
 package com.marv.arionwallet.modules.withdrawal.presentation;
 
+import com.marv.arionwallet.modules.transaction.domain.TransactionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import org.hibernate.resource.transaction.spi.TransactionStatus;
 
 import java.time.Instant;
 
