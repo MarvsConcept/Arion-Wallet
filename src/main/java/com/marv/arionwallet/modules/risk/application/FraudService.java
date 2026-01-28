@@ -46,6 +46,12 @@ public class FraudService {
 
     }
 
+
+    public void validateWithdrawal(User user, long amountInKobo) {
+
+    }
+
+
     private TransferLimit getLimitsFor(KycLevel level) {
 
         return switch (level) {

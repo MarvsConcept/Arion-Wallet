@@ -305,7 +305,6 @@ public class TransferServiceTest {
         verifyNoInteractions(userRepository, walletRepository, transactionRepository, ledgerEntryRepository, fraudService);
     }
 
-
     @Test
     void transfer_shouldSucceed_andMoveMoney_andWriteLedger() {
 
