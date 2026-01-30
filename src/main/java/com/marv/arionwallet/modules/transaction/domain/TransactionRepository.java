@@ -14,7 +14,9 @@ public interface TransactionRepository {
 
     Optional<Transaction> findById(UUID id);
 
-    Optional<Transaction> findByReference(String reference);
+//    Optional<Transaction> findByReference(String reference);
+
+    Optional<Transaction> findByReferenceAndType(String reference, TransactionType type);
 
     Page<Transaction> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 

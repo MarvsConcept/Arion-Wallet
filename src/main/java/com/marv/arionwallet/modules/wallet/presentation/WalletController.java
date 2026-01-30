@@ -36,14 +36,25 @@ public class WalletController {
         return ApiResponse.ok("Funding initiated successfully", response);
     }
 
-    @PostMapping("/fund/callback")
-    public ApiResponse<CompleteFundingResponseDto> completeFunding(
-                        @Valid @RequestBody FundingCallbackRequestDto request) {
+//    @PostMapping("/fund/callback")
+//    public ApiResponse<CompleteFundingResponseDto> completeFunding(
+//                        @Valid @RequestBody FundingCallbackRequestDto request) {
+//
+//        CompleteFundingResponseDto response = walletService.completeFunding(request.getReference());
+//
+//        return ApiResponse.ok("Funding completed successfully", response);
+//    }
 
-        CompleteFundingResponseDto response = walletService.completeFunding(request.getReference());
+    @PostMapping("/fund/{reference}")
+    public ApiResponse<CompleteFundingResponseDto> completeFunding(
+            @PathVariable String reference) {
+
+        CompleteFundingResponseDto response = walletService.completeFunding(reference);
 
         return ApiResponse.ok("Funding completed successfully", response);
     }
+
+
 
     @GetMapping("/transactions")
     public ApiResponse<Page<TransactionHistoryItemDto>> getMyTransactions(

@@ -72,7 +72,7 @@ public class WalletService {
     public CompleteFundingResponseDto completeFunding(String reference) {
 
         // Find transaction by reference
-        Transaction transaction = transactionRepository.findByReference(reference)
+        Transaction transaction = transactionRepository.findByReferenceAndType(reference, TransactionType.FUNDING)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid reference"));
 
         // Guard against double-processing (Idempotency-lite)

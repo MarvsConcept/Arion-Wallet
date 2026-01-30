@@ -49,7 +49,7 @@ public class Transaction {
     @Column(name = "idempotency_key")
     private String idempotencyKey;
 
-    @Column(name = "destination", nullable = false)
+    @Column(name = "destination", nullable = true)
     private String destination;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -59,7 +59,6 @@ public class Transaction {
     private Instant updatedAt;
 
     @Builder
-
     public Transaction(UUID id,
                        User user,
                        TransactionType type,
@@ -89,6 +88,10 @@ public class Transaction {
 
     public void markSuccess() {
         this.status = TransactionStatus.SUCCESS;
+    }
+
+    public void markFailed() {
+        this.status = TransactionStatus.FAILED;
     }
 
     public boolean isCompleted() {

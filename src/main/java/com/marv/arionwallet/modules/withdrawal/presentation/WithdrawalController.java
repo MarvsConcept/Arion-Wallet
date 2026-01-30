@@ -13,7 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/withdraw")
+@RequestMapping("/api/v1/withdrawals")
 @RequiredArgsConstructor
 public class WithdrawalController {
 
@@ -30,5 +30,14 @@ public class WithdrawalController {
         WithdrawalResponseDto response = withdrawalService.requestWithdrawal(currentUser, request, idempotencyKey);
 
         return ApiResponse.ok("Withdrawal initiated successfully", response);
+    }
+
+    @PostMapping("/{reference}/complete")
+    public ApiResponse<WithdrawalResponseDto> completeWithdrawal(
+            @PathVariable String reference) {
+
+        WithdrawalResponseDto response = withdrawalService.completeWithdrawal(reference);
+
+        return ApiResponse.ok("Withdrawal processed", response);
     }
 }

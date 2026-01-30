@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 public class WithdrawalRequestDto {
@@ -17,7 +19,6 @@ public class WithdrawalRequestDto {
     @NotBlank
     private String currency;
 
-    @NotBlank
-    private String bankAccountId;
-
+    @NotNull
+    private UUID bankAccountId;
 }
