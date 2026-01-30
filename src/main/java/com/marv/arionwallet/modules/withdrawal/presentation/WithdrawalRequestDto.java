@@ -18,6 +18,6 @@ public class WithdrawalRequestDto {
     private String currency;
 
     @NotBlank
-    private String destination;
+    private String bankAccountId;
 
 }

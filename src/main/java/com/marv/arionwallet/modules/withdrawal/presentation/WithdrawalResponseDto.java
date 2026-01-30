@@ -16,7 +16,9 @@ public class WithdrawalResponseDto {
     private TransactionStatus status;
     private long amountInKobo;
     private String currency;
-    private String destination;
+    private String bankCode;
+    private String accountNumber;
+    private String accountName;
     private Instant createdAt;
 
 }
