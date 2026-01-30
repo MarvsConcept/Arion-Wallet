@@ -55,7 +55,7 @@ public class WithdrawalService {
                         .reference(tx.getReference())
                         .status(tx.getStatus())
                         .currency(tx.getCurrency())
-                        .destination(tx.getDestination())
+//                        .destination(tx.getDestination())
                         .amountInKobo(tx.getAmount())
                         .createdAt(tx.getCreatedAt())
                         .build();
@@ -90,7 +90,7 @@ public class WithdrawalService {
                 .amount(request.getAmountInKobo())
                 .currency(request.getCurrency())
                 .reference(reference)
-                .destination(request.getDestination())
+//                .destination(request.getDestination())
                 .idempotencyKey(idempotencyKey)
                 .build();
 
@@ -102,7 +102,7 @@ public class WithdrawalService {
                 .status(transaction.getStatus())
                 .currency(transaction.getCurrency())
                 .amountInKobo(transaction.getAmount())
-                .destination(transaction.getDestination())
+//                .destination(transaction.getDestination())
                 .createdAt(transaction.getCreatedAt())
                 .build();
     }
