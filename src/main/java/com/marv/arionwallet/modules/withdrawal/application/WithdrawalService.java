@@ -85,7 +85,7 @@ public class WithdrawalService {
         }
 
         // Load Wallet
-        Wallet wallet = walletRepository.findByUserIdAndCurrency(user.getId(), request.getCurrency())
+        Wallet wallet = walletRepository.findByUserIdAndCurrencyForUpdate(user.getId(), request.getCurrency())
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
 
         // Validate Balance =
@@ -159,12 +159,21 @@ public class WithdrawalService {
             throw new IllegalStateException("Withdrawal must be pending to complete");
         }
 
+
         // Load wallet
         Wallet wallet = walletRepository.findByUserIdAndCurrencyForUpdate(
                 transaction.getUser().getId(),
                 transaction.getCurrency()
         )
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found for user"));
+
+
+        // Ensure transaction belongs to a wallet currency and user is active.
+        if (transaction.getUser().getStatus() != UserStatus.ACTIVE) {
+            transaction.markFailed();
+            transactionRepository.save(transaction);
+            return toResponse(transaction);
+        }
 
         // Recheck Balance
         if (wallet.getBalance() < transaction.getAmount()){
