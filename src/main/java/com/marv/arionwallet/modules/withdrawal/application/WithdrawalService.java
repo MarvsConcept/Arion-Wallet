@@ -9,8 +9,6 @@ import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.transaction.domain.TransactionStatus;
 import com.marv.arionwallet.modules.transaction.domain.TransactionType;
-import com.marv.arionwallet.modules.transfer.presentation.TransferRequestDto;
-import com.marv.arionwallet.modules.transfer.presentation.TransferResponseDto;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.user.domain.UserStatus;
 import com.marv.arionwallet.modules.wallet.domain.Wallet;
@@ -25,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -139,6 +136,8 @@ public class WithdrawalService {
                 .createdAt(transaction.getCreatedAt())
                 .build();
     }
+
+
 
     @Transactional
     public WithdrawalResponseDto completeWithdrawal(String reference) {

@@ -2,6 +2,7 @@ package com.marv.arionwallet.modules.withdrawal.domain;
 
 import com.marv.arionwallet.modules.user.domain.User;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -41,6 +42,7 @@ public class BankAccount {
     private Instant createdAt;
 
 
+    @Builder
     public BankAccount(UUID id,
                        User user,
                        String bankCode,
