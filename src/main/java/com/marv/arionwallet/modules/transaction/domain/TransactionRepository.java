@@ -49,13 +49,13 @@ public interface TransactionRepository {
     WHERE t.user.id = :userId
       AND t.type = com.marv.arionwallet.modules.transaction.domain.TransactionType.WITHDRAWAL
       AND t.status IN (
-            com.marv.arionwallet.modules.transaction.domain.TransactionStatus.PENDING
+            com.marv.arionwallet.modules.transaction.domain.TransactionStatus.PENDING,
             com.marv.arionwallet.modules.transaction.domain.TransactionStatus.SUCCESS
+      )
       AND t.createdAt >= :start
       AND t.createdAt < :end
 """)
     long sumNonFailedWithdrawalsForUserBetween(UUID userId, Instant start, Instant end);
-
 
     @Modifying
     @Query("""
