@@ -127,4 +127,62 @@ public class FraudServiceTest {
 
     }
 
+
+    @Test
+    void validateWithdrawal_shouldThrow_whenAmountExceedsSingleLimit() {
+
+        UUID userId = UUID.randomUUID();
+
+        User user = User.builder()
+                .id(userId)
+                .kycLevel(KycLevel.NONE)
+                .build();
+
+        long tooBigAmount = 7_000_000L;
+
+        // ACT + ASSERT
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> fraudService.validateWithdrawal(user, tooBigAmount)
+        );
+
+        assertEquals("Withdrawal amount exceeded per transaction for your KYC level", ex.getMessage());
+
+    }
+
+    @Test
+    void validateWithdrawal_shouldThrow_whenDailyLimitExceeded_includingPendingAndSuccess() {
+
+        UUID userId = UUID.randomUUID();
+
+        User user = User.builder()
+                .id(userId)
+                .kycLevel(KycLevel.NONE)
+                .build();
+
+        long todayTotal = 9_900_000L;
+        long amount = 200_000L;
+
+        when(transactionRepository.sumNonFailedWithdrawalsForUserBetween(
+                eq(userId),
+                any(Instant.class),
+                any(Instant.class)
+        )).thenReturn(todayTotal);
+
+        // Act + Assert
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> fraudService.validateWithdrawal(user, amount)
+        );
+
+        assertEquals("Daily withdrawal limit exceeded for your KYC level", ex.getMessage());
+
+        // verify repo was queried exactly once
+        verify(transactionRepository, times(1)).sumNonFailedWithdrawalsForUserBetween(
+                eq(user.getId()),
+                any(Instant.class),
+                any(Instant.class)
+        );
+    }
+
 }
