@@ -1,5 +1,6 @@
 package com.marv.arionwallet.modules.withdrawal.application;
 
+import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
 import com.marv.arionwallet.modules.risk.application.FraudService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
@@ -282,6 +283,73 @@ class WithdrawalServiceTest {
         verify(transactionRepository, times(1))
                 .findByUserIdAndIdempotencyKeyAndType(userId, idempotencyKey, TransactionType.WITHDRAWAL);
 
+    }
+
+    @Test
+    void completeWithdrawal_shouldBeIdempotent_whenAlreadySuccess() {
+
+        UUID userId = UUID.randomUUID();
+
+        User user = User.builder()
+                .id(userId)
+                .status(UserStatus.ACTIVE)
+                .build();
+
+        // Dummy Transaction representing a previous withdrawal
+        Transaction tx = Transaction.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .reference("WD-EXISTING")
+                .type(TransactionType.WITHDRAWAL)
+                .status(TransactionStatus.SUCCESS)
+                .amount(200_000L)
+                .currency("NGN")
+                .createdAt(Instant.now())
+                .build();
+
+        WithdrawalDetails details = WithdrawalDetails.builder()
+                .transaction(tx)
+                .bankCode("123")
+                .accountName("Marv")
+                .accountNumber("123456789")
+                .build();
+
+        // Mock
+        when(transactionRepository.findByReferenceAndType(
+                tx.getReference(), TransactionType.WITHDRAWAL))
+                .thenReturn(Optional.of(tx));
+        when(withdrawalDetailsRepository.findByTransaction(tx))
+                .thenReturn(Optional.of(details));
+
+
+        // ACT
+        WithdrawalResponseDto response = withdrawalService.completeWithdrawal(
+                tx.getReference()
+        );
+
+        // ASSERT
+        assertEquals(tx.getReference(), response.getReference());
+        assertEquals(TransactionStatus.SUCCESS, response.getStatus());
+        assertEquals("NGN", response.getCurrency());
+        assertEquals(200_000L, response.getAmountInKobo());
+
+        assertEquals("123", response.getBankCode());
+        assertEquals("Marv", response.getAccountName());
+        assertEquals("123456789", response.getAccountNumber());
+
+        // VERIFY
+        verifyNoInteractions(walletRepository, ledgerEntryRepository);
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(walletRepository, never()).save(any(Wallet.class));
+        verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
+
+        verify(transactionRepository, times(1))
+                .findByReferenceAndType(tx.getReference(), TransactionType.WITHDRAWAL);
+
+        verify(withdrawalDetailsRepository, times(1))
+                .findByTransaction(tx);
+
 
     }
+
 }
