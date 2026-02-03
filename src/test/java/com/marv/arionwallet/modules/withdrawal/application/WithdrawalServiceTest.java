@@ -231,6 +231,57 @@ class WithdrawalServiceTest {
         //  fraud is called
         verify(fraudService).validateWithdrawal(user, 200_000L);
 
+    }
+
+    @Test
+    void requestWithdrawal_shouldThrow_whenInsufficientBalance() {
+
+        UUID userId = UUID.randomUUID();
+
+        // Dummy Idempotency Key
+        String idempotencyKey = "idem-1234";
+        // Dummy BankId
+        UUID bankId = UUID.randomUUID();
+
+        User user = User.builder()
+                .id(userId)
+                .status(UserStatus.ACTIVE)
+                .build();
+
+        // Withdrawal request
+        WithdrawalRequestDto request = WithdrawalRequestDto.builder()
+                .amountInKobo(200_000L)
+                .currency("NGN")
+                .bankAccountId(bankId)
+                .build();
+
+        // Mock
+        Wallet wallet = Wallet.builder()
+                .balance(100_000L)
+                .build();
+
+        when(walletRepository.findByUserIdAndCurrencyForUpdate(userId, "NGN"))
+                .thenReturn(Optional.of(wallet));
+        when(transactionRepository.findByUserIdAndIdempotencyKeyAndType(userId, idempotencyKey, TransactionType.WITHDRAWAL))
+                .thenReturn(Optional.empty());
+
+        // ACT
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> withdrawalService.requestWithdrawal(user, request, idempotencyKey)
+        );
+
+        // ASSERT
+        assertEquals("Insufficient Balance", ex.getMessage());
+
+        // Verify
+        verify(transactionRepository, never()).save(any(Transaction.class));
+        verify(withdrawalDetailsRepository, never()).save(any(WithdrawalDetails.class));
+        verifyNoInteractions(bankAccountRepository, fraudService, ledgerEntryRepository);
+
+        verify(transactionRepository, times(1))
+                .findByUserIdAndIdempotencyKeyAndType(userId, idempotencyKey, TransactionType.WITHDRAWAL);
+
 
     }
 }
