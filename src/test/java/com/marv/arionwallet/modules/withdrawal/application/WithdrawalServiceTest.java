@@ -398,6 +398,7 @@ class WithdrawalServiceTest {
         when(walletRepository.save(any(Wallet.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
+
         when(ledgerEntryRepository.save(any(LedgerEntry.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
@@ -468,6 +469,69 @@ class WithdrawalServiceTest {
         assertEquals("123456789", response.getAccountNumber());
     }
 
+    @Test
+    void completeWithdrawal_shouldMarkFailedAndNotDebitOrWriteLedger_whenBalanceInsufficientAtProcessingTime() {
+
+        UUID userId = UUID.randomUUID();
+
+        User user = User.builder()
+                .id(userId)
+                .status(UserStatus.ACTIVE)
+                .build();
+
+        // Dummy Transaction
+        Transaction tx = Transaction.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .reference("WD-LOW")
+                .type(TransactionType.WITHDRAWAL)
+                .status(TransactionStatus.PENDING)
+                .amount(200_000L)
+                .currency("NGN")
+                .createdAt(Instant.now())
+                .build();
+
+
+        // Mock
+        Wallet wallet = Wallet.builder()
+                .balance(100_000L)
+                .build();
+
+
+        WithdrawalDetails details = WithdrawalDetails.builder()
+                .transaction(tx)
+                .bankCode("123")
+                .accountName("Marv")
+                .accountNumber("123456789")
+                .build();
+
+        when(transactionRepository.findByReferenceAndType(
+                tx.getReference(), TransactionType.WITHDRAWAL))
+                .thenReturn(Optional.of(tx));
+        when(walletRepository.findByUserIdAndCurrencyForUpdate(userId, "NGN"))
+                .thenReturn(Optional.of(wallet));
+        when(withdrawalDetailsRepository.findByTransaction(tx))
+                .thenReturn(Optional.of(details));
+        when(transactionRepository.save(any(Transaction.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        // ACT
+        WithdrawalResponseDto response = withdrawalService.completeWithdrawal(tx.getReference());
+
+        // ASSERT
+        assertEquals(TransactionStatus.FAILED, response.getStatus());
+        assertEquals(100_000L, wallet.getBalance()); // unchanged
+
+        // VERIFY
+        ArgumentCaptor<Transaction> txCaptor = ArgumentCaptor.forClass(Transaction.class);
+        verify(transactionRepository, times(1)).save(txCaptor.capture());
+        assertEquals(TransactionStatus.FAILED, txCaptor.getValue().getStatus());
+
+
+        verify(ledgerEntryRepository, never()).save(any(LedgerEntry.class));
+
+
+    }
 
 }
 
