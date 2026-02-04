@@ -22,7 +22,8 @@ public class WithdrawalTimeoutJob {
     public void failStalePendingWithdrawals() {
         Instant cutoff = Instant.now().minus(Duration.ofMinutes(39));
 
-        int updated  = transactionRepository.findStalePendingWithdrawals(cutoff);
+        int updated  = transactionRepository.failStalePendingWithdrawals(cutoff);
 
     }
 }
+

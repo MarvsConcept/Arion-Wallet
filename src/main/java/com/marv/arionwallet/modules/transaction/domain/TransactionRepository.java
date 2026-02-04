@@ -65,8 +65,11 @@ public interface TransactionRepository {
     AND t.status = com.marv.arionwallet.modules.transaction.domain.TransactionStatus.PENDING
     AND t.createdAt < :cutoff
 """)
-    int findStalePendingWithdrawals(Instant cutoff);
+    int failStalePendingWithdrawals(Instant cutoff);
+
+    List<Transaction> findTop20ByTypeAndStatusOrderByCreatedAtAsc(TransactionType type, TransactionStatus pending);
 }
+
 
 
 
