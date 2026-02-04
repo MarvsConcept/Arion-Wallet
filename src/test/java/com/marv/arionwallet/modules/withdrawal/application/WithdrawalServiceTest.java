@@ -1,6 +1,8 @@
 package com.marv.arionwallet.modules.withdrawal.application;
 
+import com.marv.arionwallet.modules.ledger.domain.LedgerAccountType;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
+import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
 import com.marv.arionwallet.modules.risk.application.FraudService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
@@ -17,8 +19,6 @@ import com.marv.arionwallet.modules.withdrawal.domain.WithdrawalDetails;
 import com.marv.arionwallet.modules.withdrawal.domain.WithdrawalDetailsRepository;
 import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalRequestDto;
 import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalResponseDto;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -295,7 +296,7 @@ class WithdrawalServiceTest {
                 .status(UserStatus.ACTIVE)
                 .build();
 
-        // Dummy Transaction representing a previous withdrawal
+        // Dummy Transaction
         Transaction tx = Transaction.builder()
                 .id(UUID.randomUUID())
                 .user(user)
@@ -349,7 +350,124 @@ class WithdrawalServiceTest {
         verify(withdrawalDetailsRepository, times(1))
                 .findByTransaction(tx);
 
-
     }
 
+    @Test
+    void completeWithdrawal_shouldDebitWallet_writeLedger_markSuccess() {
+
+        UUID userId = UUID.randomUUID();
+
+        User user = User.builder()
+                .id(userId)
+                .status(UserStatus.ACTIVE)
+                .build();
+
+        // Dummy Transaction
+        Transaction tx = Transaction.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .reference("WD-123")
+                .type(TransactionType.WITHDRAWAL)
+                .status(TransactionStatus.PENDING)
+                .amount(200_000L)
+                .currency("NGN")
+                .createdAt(Instant.now())
+                .build();
+
+
+        // Mock
+        Wallet wallet = Wallet.builder()
+                .balance(1_000_000L)
+                .build();
+
+
+        WithdrawalDetails details = WithdrawalDetails.builder()
+                .transaction(tx)
+                .bankCode("123")
+                .accountName("Marv")
+                .accountNumber("123456789")
+                .build();
+
+        when(transactionRepository.findByReferenceAndType(
+                tx.getReference(), TransactionType.WITHDRAWAL))
+                .thenReturn(Optional.of(tx));
+        when(walletRepository.findByUserIdAndCurrencyForUpdate(userId, "NGN"))
+                .thenReturn(Optional.of(wallet));
+        when(withdrawalDetailsRepository.findByTransaction(tx))
+                .thenReturn(Optional.of(details));
+        when(walletRepository.save(any(Wallet.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        when(ledgerEntryRepository.save(any(LedgerEntry.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        when(transactionRepository.save(any(Transaction.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        // ACT
+        WithdrawalResponseDto response = withdrawalService.completeWithdrawal(tx.getReference());
+
+        // ASSERT
+        assertEquals(800_000L, wallet.getBalance());
+
+        // VERIFY
+        verify(walletRepository, times(1)).save(wallet);
+
+
+        // Capture and assert ledger entries
+        ArgumentCaptor<LedgerEntry> ledgerCaptor = ArgumentCaptor.forClass(LedgerEntry.class);
+        verify(ledgerEntryRepository, times(2)).save(ledgerCaptor.capture());
+
+        List<LedgerEntry> entries = ledgerCaptor.getAllValues();
+        assertEquals(2, entries.size());
+
+        // Wallet debit entry exists
+        boolean hasWalletDebit = entries.stream().anyMatch(e ->
+                e.getAccountType() == LedgerAccountType.USER_WALLET &&
+                        e.getDirection() == LedgerEntryDirection.DEBIT &&
+                        e.getWallet() == wallet &&
+                        e.getAmount() == 200_000L &&
+                        "NGN".equals(e.getCurrency())
+        );
+
+        // External payout credit exists
+        boolean hasExternalCredit = entries.stream().anyMatch(e ->
+                e.getAccountType() == LedgerAccountType.EXTERNAL_PAYOUT &&
+                        e.getDirection() == LedgerEntryDirection.CREDIT &&
+                        e.getWallet() == null &&
+                        e.getAmount() == 200_000L &&
+                        "NGN".equals(e.getCurrency())
+        );
+
+        assertTrue(hasWalletDebit);
+        assertTrue(hasExternalCredit);
+
+//        // Assert transaction is marked SUCCESS and saved
+//        transaction.markSuccess();
+//        transactionRepository.save(transaction);
+
+        // Capture the Transaction passed to save:
+        ArgumentCaptor<Transaction> txCaptor = ArgumentCaptor.forClass(Transaction.class);
+        verify(transactionRepository, times(1)).save(txCaptor.capture());
+
+        Transaction savedTx = txCaptor.getValue();
+        assertEquals(TransactionStatus.SUCCESS, savedTx.getStatus());
+
+        // verify the initial lookup happened
+        verify(transactionRepository, times(1))
+                .findByReferenceAndType(tx.getReference(), TransactionType.WITHDRAWAL);
+
+
+        // Assert response is correct (minimal)
+        assertEquals(tx.getReference(), response.getReference());
+        assertEquals(TransactionStatus.SUCCESS, response.getStatus());
+        assertEquals(200_000L, response.getAmountInKobo());
+        assertEquals("NGN", response.getCurrency());
+        assertEquals("123", response.getBankCode());
+        assertEquals("Marv", response.getAccountName());
+        assertEquals("123456789", response.getAccountNumber());
+    }
+
+
 }
+
