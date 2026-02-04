@@ -185,4 +185,34 @@ public class FraudServiceTest {
         );
     }
 
+    @Test
+    void validateWithdrawal_shouldNotThrow_whenWithinDailyLimit() {
+
+        UUID userId = UUID.randomUUID();
+
+        User user = User.builder()
+                .id(userId)
+                .kycLevel(KycLevel.NONE)
+                .build();
+
+        long todayTotal = 9_000_000L;
+        long amount = 500_000L;
+
+
+        // Mock
+        when(transactionRepository.sumNonFailedWithdrawalsForUserBetween(
+                eq(userId), any(Instant.class), any(Instant.class)
+        )).thenReturn(todayTotal);
+
+
+        // Act + Assert
+        assertDoesNotThrow(() -> fraudService.validateWithdrawal(user, amount));
+
+        // VERIFY
+        verify(transactionRepository, times(1))
+                .sumNonFailedWithdrawalsForUserBetween(eq(userId), any(Instant.class), any(Instant.class));
+
+
+    }
+
 }
