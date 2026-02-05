@@ -3,8 +3,11 @@ package com.marv.arionwallet.modules.withdrawal.application;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.withdrawal.domain.BankAccount;
 import com.marv.arionwallet.modules.withdrawal.domain.BankAccountRepository;
+import com.marv.arionwallet.modules.withdrawal.domain.WithdrawalDetails;
+import com.marv.arionwallet.modules.withdrawal.domain.WithdrawalDetailsRepository;
 import com.marv.arionwallet.modules.withdrawal.presentation.BankAccountRequestDto;
 import com.marv.arionwallet.modules.withdrawal.presentation.BankAccountResponseDto;
+import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalDetailsResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,4 +63,5 @@ public class BankAccountService {
                 .build();
 
     }
+
 }

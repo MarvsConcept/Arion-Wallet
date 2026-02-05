@@ -17,9 +17,14 @@ import com.marv.arionwallet.modules.withdrawal.domain.BankAccount;
 import com.marv.arionwallet.modules.withdrawal.domain.BankAccountRepository;
 import com.marv.arionwallet.modules.withdrawal.domain.WithdrawalDetails;
 import com.marv.arionwallet.modules.withdrawal.domain.WithdrawalDetailsRepository;
+import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalDetailsResponseDto;
+import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalHistoryItemDto;
 import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalRequestDto;
 import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalResponseDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -234,6 +239,67 @@ public class WithdrawalService {
                 .createdAt(tx.getCreatedAt())
                 .build();
     }
+
+    public WithdrawalDetailsResponseDto getWithdrawal(User user, String reference) {
+
+        WithdrawalDetails wd =  withdrawalDetailsRepository.
+                findByTransaction_User_IdAndTransaction_Reference(user.getId(), reference)
+                .orElseThrow(() -> new IllegalArgumentException("Withdrawal not found"));
+
+        Transaction tx = wd.getTransaction();
+
+        return WithdrawalDetailsResponseDto.builder()
+                .reference(tx.getReference())
+                .status(tx.getStatus())
+                .amountInKobo(tx.getAmount())
+                .currency(tx.getCurrency())
+                .bankCode(wd.getBankCode())
+                .accountName(wd.getAccountName())
+                .accountNumberMasked(maskAccount(wd.getAccountNumber()))
+                .createdAt(tx.getCreatedAt())
+                .build();
+
+    }
+
+    public Page<WithdrawalHistoryItemDto> listWithdrawals(User user, Pageable pageable) {
+
+//        Pageable pageable = PageRequest.of(page, size);
+
+        Page<WithdrawalDetails> wdPage =
+                withdrawalDetailsRepository.findByTransaction_User_IdOrderByTransaction_CreatedAtDesc(user.getId(), pageable);
+
+        wdPage = withdrawalDetailsRepository.
+                findByTransaction_User_IdOrderByTransaction_CreatedAtDesc(user.getId(), pageable);
+
+        return wdPage.map(wd -> {
+            Transaction tx = wd.getTransaction();
+
+            return WithdrawalHistoryItemDto.builder()
+                    .reference(tx.getReference())
+                    .status(tx.getStatus())
+                    .amountInKobo(tx.getAmount())
+                    .currency(tx.getCurrency())
+                    .bankCode(wd.getBankCode())
+                    .accountName(wd.getAccountName())
+                    .accountNumberMasked(maskAccount(wd.getAccountNumber()))
+                    .createdAt(tx.getCreatedAt())
+                    .build();
+        });
+
+    }
+
+    private String maskAccount(String accountNumber) {
+
+            if (accountNumber == null || accountNumber.isBlank())
+                return null;
+
+            String trimmed = accountNumber.trim();
+            if (trimmed.length() <= 4) return "****";
+
+            String last4 = trimmed.substring(trimmed.length() - 4);
+            return "******" + last4;
+        }
 }
+
 
 
