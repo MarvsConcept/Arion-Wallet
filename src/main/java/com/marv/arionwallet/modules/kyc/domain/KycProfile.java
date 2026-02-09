@@ -3,12 +3,14 @@ package com.marv.arionwallet.modules.kyc.domain;
 import com.marv.arionwallet.modules.user.domain.KycLevel;
 import com.marv.arionwallet.modules.user.domain.User;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Past;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -25,6 +27,22 @@ public class KycProfile {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
+
+    @Past
+    @Column(name = "date_of_birth", nullable = false)
+    private LocalDate dateOfBirth;
+
+    @Column(name = "address", nullable = false)
+    private String address;
+
+    @Column(name = "id_type", nullable = false)
+    private String idType;
+
+    @Column(name = "id_number", nullable = false)
+    private String idNumber;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private KycStatus status;
@@ -36,7 +54,7 @@ public class KycProfile {
     @Column(name = "submitted_at", nullable = false, updatable = false)
     private Instant submittedAt;
 
-    @Column(name = "reviewed_at", updatable = false)
+    @Column(name = "reviewed_at")
     private Instant reviewedAt;
 
     @Column(name = "rejection_reason")
@@ -45,6 +63,11 @@ public class KycProfile {
     @Builder
     public KycProfile(UUID id,
                       User user,
+                      String fullName,
+                      LocalDate dateOfBirth,
+                      String address,
+                      String idType,
+                      String idNumber,
                       KycStatus status,
                       KycLevel level,
                       Instant submittedAt,
@@ -53,12 +76,19 @@ public class KycProfile {
         Instant now = Instant.now();
         this.id = id != null ? id : UUID.randomUUID();
         this.user = user;
+        this.fullName = fullName;
+        this.dateOfBirth = dateOfBirth;
+        this.address = address;
+        this.idType = idType;
+        this.idNumber = idNumber;
         this.status = status;
         this.level = level != null ? level : KycLevel.NONE;
         this.submittedAt = submittedAt != null ? submittedAt : now;
         this.reviewedAt = reviewedAt;
         this.rejectionReason = rejectionReason;
     }
+
+
 
     public void submit() {
         if (this.status == KycStatus.APPROVED) {
@@ -69,6 +99,21 @@ public class KycProfile {
         this.rejectionReason = null;
         this.submittedAt = Instant.now();
         this.reviewedAt = null;
+    }
+
+
+    public void submitWithDetails(String fullName,
+                                  LocalDate dateOfBirth,
+                                  String address,
+                                  String idType,
+                                  String idNumber) {
+        submit();
+
+        this.fullName = fullName;
+        this.dateOfBirth = dateOfBirth;
+        this.address = address;
+        this.idType = idType;
+        this.idNumber = idNumber;
     }
 
     public void approve(KycLevel level) {
