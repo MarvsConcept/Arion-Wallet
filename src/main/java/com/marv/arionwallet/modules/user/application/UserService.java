@@ -1,5 +1,6 @@
 package com.marv.arionwallet.modules.user.application;
 
+import com.marv.arionwallet.modules.auth.domain.*;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.user.domain.UserRepository;
 import com.marv.arionwallet.modules.user.presentation.UserRegistrationRequestDto;
@@ -12,6 +13,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -20,7 +24,8 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final WalletRepository walletRepository;
     private final AccountNumberGenerator accountNumberGenerator;
-
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
 
     @Transactional
     public UserResponseDto registerUser(UserRegistrationRequestDto request) {
@@ -56,6 +61,13 @@ public class UserService {
         // Save to the database
         User savedUser = userRepository.save(user);
 
+        Role userRole = roleRepository.findByName(RoleName.USER)
+                .orElseThrow(() -> new IllegalStateException("Role was not seeded"));
+
+        userRoleRepository.save(new UserRole(savedUser, userRole));
+
+        Set<RoleName> roles = new HashSet<>(userRoleRepository.findRoleNamesByUserId(savedUser.getId()));
+
         // Create Wallet during registration
         Wallet wallet = Wallet.builder()
                 .user(savedUser)
@@ -73,6 +85,7 @@ public class UserService {
                 .lastName(savedUser.getLastName())
                 .accountNumber(savedUser.getAccountNumber())
                 .status(savedUser.getStatus())
+                .roles(roles)
                 .kycLevel(savedUser.getKycLevel())
                 .createdAt(savedUser.getCreatedAt())
                 .build();
@@ -84,6 +97,8 @@ public class UserService {
         Wallet wallet = walletRepository.findByUserIdAndCurrency(currentUser.getId(), "NGN")
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found for user"));
 
+        Set<RoleName> roles = new HashSet<>(userRoleRepository.findRoleNamesByUserId(currentUser.getId()));
+
         return UserSummaryDto.builder()
                 .userId(currentUser.getId())
                 .firstName(currentUser.getFirstName())
@@ -92,11 +107,11 @@ public class UserService {
                 .email(currentUser.getEmail())
                 .phone(currentUser.getPhone())
                 .status(currentUser.getStatus())
+                .roles(roles)
                 .kycLevel(currentUser.getKycLevel())
                 .walletCurrency(wallet.getCurrency())
                 .walletBalance(wallet.getBalance())
                 .build();
     }
-
 
 }

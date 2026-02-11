@@ -1,5 +1,6 @@
 package com.marv.arionwallet.modules.user.domain;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,7 +20,8 @@ public interface UserRepository {
 
     boolean existsByAccountNumber(String accountNumber);
 
-
     Optional<User> findByAccountNumber(String accountNumber);
+
+    List<User> findAll();
 
 }

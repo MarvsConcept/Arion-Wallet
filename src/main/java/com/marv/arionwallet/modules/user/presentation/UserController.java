@@ -28,6 +28,7 @@ public class UserController {
 
         User currentUser = (User) authentication.getPrincipal();
 
+
         UserResponseDto responseDto = UserResponseDto.builder()
                 .id(currentUser.getId())
                 .email(currentUser.getPhone())
