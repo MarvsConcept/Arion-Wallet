@@ -5,12 +5,14 @@ import com.marv.arionwallet.modules.auth.domain.RoleName;
 import com.marv.arionwallet.modules.auth.domain.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import static org.hibernate.engine.internal.Versioning.seed;
 
 @Component
 @RequiredArgsConstructor
+@Order(1)
 public class RoleSeeder implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
