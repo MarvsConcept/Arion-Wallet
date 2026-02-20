@@ -23,7 +23,7 @@ public class AuditLog {
     private UUID id;
 
     @Column(name = "actor_user_id", nullable = false)
-    private User actorUserId;
+    private UUID actorUserId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "action", nullable = false, updatable = false, length = 50)
@@ -45,7 +45,7 @@ public class AuditLog {
 
     @Builder
     public AuditLog(UUID id,
-                    User actorUserId,
+                    UUID actorUserId,
                     AuditAction action,
                     AuditTargetType targetType,
                     String targetId,
