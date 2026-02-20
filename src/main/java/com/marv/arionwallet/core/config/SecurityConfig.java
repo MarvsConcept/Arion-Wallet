@@ -25,11 +25,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-//    @Bean
-//    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService,
-//                                                           UserRepository userRepository) {
-//        return new JwtAuthenticationFilter(jwtService, userRepository);
-//    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -48,7 +43,12 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-ui/**"
                         ).permitAll()
-                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "COMPLIANCE")
+                        // ADMIN-only: role management
+                        .requestMatchers("/api/v1/admin/users/*/roles/**").hasRole("ADMIN")
+
+                        // ADMIN or COMPLIANCE: KYC + user ops
+                        .requestMatchers("/api/v1/admin/kyc/**").hasAnyRole("ADMIN", "COMPLIANCE")
+                        .requestMatchers("/api/v1/admin/users/**").hasAnyRole("ADMIN", "COMPLIANCE")
 
                         .anyRequest().authenticated()
                 )
