@@ -1,11 +1,10 @@
-package com.marv.arionwallet.modules.risk.application;
+package com.marv.arionwallet.modules.fraud.application;
 
-import com.marv.arionwallet.modules.risk.domain.TransferLimit;
-import com.marv.arionwallet.modules.risk.domain.WithdrawalLimit;
+import com.marv.arionwallet.modules.fraud.domain.TransferLimit;
+import com.marv.arionwallet.modules.fraud.domain.WithdrawalLimit;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.user.domain.KycLevel;
 import com.marv.arionwallet.modules.user.domain.User;
-import com.marv.arionwallet.modules.withdrawal.domain.WithdrawalDetailsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

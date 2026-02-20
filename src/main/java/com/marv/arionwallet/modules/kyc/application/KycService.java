@@ -26,8 +26,8 @@ public class KycService {
         KycProfile profile = kycProfileRepository.findByUserId(currentUser.getId())
                 .orElseGet(()-> KycProfile.builder()
                         .user(currentUser)
-                        .status(KycStatus.PENDING)
-                        .level(KycLevel.NONE)
+//                        .status(KycStatus.PENDING)
+//                        .level(KycLevel.NONE)
                         .build()
                 );
 
@@ -36,7 +36,8 @@ public class KycService {
                 request.getDateOfBirth(),
                 request.getAddress(),
                 request.getIdType(),
-                request.getIdNumber()
+                request.getIdNumber(),
+                request.getRequestedLevel()
         );
 
         profile = kycProfileRepository.save(profile);
@@ -62,6 +63,7 @@ public class KycService {
         return KycResponseDto.builder()
                 .status(profile.getStatus())
                 .level(profile.getLevel())
+                .requestedLevel(profile.getRequestedLevel())
                 .submittedAt(profile.getSubmittedAt())
                 .reviewedAt(profile.getReviewedAt())
                 .rejectionReason(profile.getRejectionReason())

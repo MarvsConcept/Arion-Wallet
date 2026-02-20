@@ -1,5 +1,6 @@
 package com.marv.arionwallet.modules.kyc.presentation;
 
+import com.marv.arionwallet.modules.user.domain.KycLevel;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -23,4 +24,8 @@ public class KycSubmitRequestDto {
 
     @NotBlank
     private String idNumber;
+
+    @NotNull
+    private KycLevel requestedLevel; // BASIC or FULL
+
 }

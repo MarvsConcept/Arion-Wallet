@@ -1,4 +1,4 @@
-package com.marv.arionwallet.modules.risk.domain;
+package com.marv.arionwallet.modules.fraud.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -15,6 +15,7 @@ public class KycReviewItemDto {
     private UUID userId;
     private String fullName;
     private KycStatus status;
+    private KycLevel level;
     private KycLevel requestedLevel;
     private Instant submittedAt;
 }

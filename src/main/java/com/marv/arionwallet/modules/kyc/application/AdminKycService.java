@@ -39,7 +39,8 @@ public class AdminKycService {
                         .userId(ky.getUser().getId())
                         .fullName(ky.getFullName())
                         .status(ky.getStatus())
-//                        .requestedLevel(ky.getLevel())
+                        .level(ky.getLevel())
+                        .requestedLevel(ky.getRequestedLevel())
                         .submittedAt(ky.getSubmittedAt())
                         .build()
                 );

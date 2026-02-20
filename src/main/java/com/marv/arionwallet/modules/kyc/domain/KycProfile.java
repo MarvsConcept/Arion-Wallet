@@ -51,6 +51,10 @@ public class KycProfile {
     @Column(name = "level", nullable = false)
     private KycLevel level;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "requested_level", nullable = false)
+    private KycLevel requestedLevel;
+
     @Column(name = "submitted_at", nullable = false, updatable = false)
     private Instant submittedAt;
 
@@ -70,6 +74,7 @@ public class KycProfile {
                       String idNumber,
                       KycStatus status,
                       KycLevel level,
+                      KycLevel requestedLevel,
                       Instant submittedAt,
                       Instant reviewedAt,
                       String rejectionReason) {
@@ -83,6 +88,7 @@ public class KycProfile {
         this.idNumber = idNumber;
         this.status = status;
         this.level = level != null ? level : KycLevel.NONE;
+        this.requestedLevel = requestedLevel != null ? requestedLevel : KycLevel.NONE;
         this.submittedAt = submittedAt != null ? submittedAt : now;
         this.reviewedAt = reviewedAt;
         this.rejectionReason = rejectionReason;
@@ -90,30 +96,51 @@ public class KycProfile {
 
 
 
-    public void submit() {
-        if (this.status == KycStatus.APPROVED) {
-            throw new IllegalStateException("Approved KYC cannot be resubmitted");
-        }
-        this.status = KycStatus.PENDING;
-        this.level = KycLevel.NONE;
-        this.rejectionReason = null;
-        this.submittedAt = Instant.now();
-        this.reviewedAt = null;
-    }
-
+//    public void submit() {
+//        if (this.status == KycStatus.APPROVED) {
+//            throw new IllegalStateException("Approved KYC cannot be resubmitted");
+//        }
+//        this.status = KycStatus.PENDING;
+//        this.level = KycLevel.NONE;
+//        this.rejectionReason = null;
+//        this.submittedAt = Instant.now();
+//        this.reviewedAt = null;
+//    }
+//
 
     public void submitWithDetails(String fullName,
                                   LocalDate dateOfBirth,
                                   String address,
                                   String idType,
-                                  String idNumber) {
-        submit();
+                                  String idNumber,
+                                  KycLevel requestedLevel) {
 
+        if (this.status == KycStatus.PENDING) {
+            throw new IllegalStateException("KYC submission already pending review");
+        }
+
+        if (requestedLevel == null || requestedLevel == KycLevel.NONE) {
+            throw new IllegalArgumentException("Requested KYC level must be BASIC or FULL");
+        }
+
+        if (this.status == KycStatus.APPROVED && requestedLevel.ordinal() <= this.level.ordinal()) {
+            throw new IllegalStateException("You can only request an upgrade above your current approved level");
+        }
+
+        // update details
         this.fullName = fullName;
         this.dateOfBirth = dateOfBirth;
         this.address = address;
         this.idType = idType;
         this.idNumber = idNumber;
+
+        // open a new review request
+        this.status = KycStatus.PENDING;
+        this.requestedLevel = requestedLevel;
+        this.rejectionReason = null;
+        this.submittedAt = Instant.now();
+        this.reviewedAt = null;
+
     }
 
     public void approve(KycLevel level) {
@@ -125,6 +152,7 @@ public class KycProfile {
         }
         this.status = KycStatus.APPROVED;
         this.level = level;
+        this.requestedLevel = KycLevel.NONE;
         this.reviewedAt = Instant.now();
         this.rejectionReason = null;
     }
@@ -135,7 +163,6 @@ public class KycProfile {
         }
 
         this.status = KycStatus.REJECTED;
-        this.level = KycLevel.NONE;
         this.reviewedAt = Instant.now();
         this.rejectionReason = reason;
     }
@@ -143,6 +170,5 @@ public class KycProfile {
     public boolean isApproved() {
         return status == KycStatus.APPROVED;
     }
-
 
 }

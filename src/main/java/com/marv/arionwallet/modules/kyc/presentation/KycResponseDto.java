@@ -14,6 +14,7 @@ public class KycResponseDto {
 
     private KycStatus status;
     private KycLevel level;
+    private KycLevel requestedLevel;
     private Instant submittedAt;
     private Instant reviewedAt;
     private String rejectionReason;

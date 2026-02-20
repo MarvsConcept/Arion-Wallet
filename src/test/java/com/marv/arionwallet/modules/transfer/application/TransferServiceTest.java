@@ -3,7 +3,7 @@ package com.marv.arionwallet.modules.transfer.application;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
-import com.marv.arionwallet.modules.risk.application.FraudService;
+import com.marv.arionwallet.modules.fraud.application.FraudService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.transaction.domain.TransactionType;

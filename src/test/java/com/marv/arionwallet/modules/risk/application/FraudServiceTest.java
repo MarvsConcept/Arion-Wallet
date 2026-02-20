@@ -1,5 +1,6 @@
 package com.marv.arionwallet.modules.risk.application;
 
+import com.marv.arionwallet.modules.fraud.application.FraudService;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.user.domain.KycLevel;
 import com.marv.arionwallet.modules.user.domain.User;

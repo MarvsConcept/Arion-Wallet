@@ -4,7 +4,7 @@ import com.marv.arionwallet.modules.ledger.domain.LedgerAccountType;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
-import com.marv.arionwallet.modules.risk.application.FraudService;
+import com.marv.arionwallet.modules.fraud.application.FraudService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.transaction.domain.TransactionStatus;
@@ -23,7 +23,6 @@ import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalRequestDto
 import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
