@@ -82,10 +82,16 @@ public class Transaction {
     }
 
     public void markSuccess() {
+        if (this.status != TransactionStatus.PENDING) {
+            throw new IllegalStateException("Only PENDING transactions can be marked SUCCESS");
+        }
         this.status = TransactionStatus.SUCCESS;
     }
 
     public void markFailed() {
+        if (this.status != TransactionStatus.PENDING) {
+            throw new IllegalStateException("Only Pending transactions can be marked FAILED");
+        }
         this.status = TransactionStatus.FAILED;
     }
 
