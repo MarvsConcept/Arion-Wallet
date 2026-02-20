@@ -4,6 +4,7 @@ import com.marv.arionwallet.modules.ledger.domain.LedgerAccountType;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
+import com.marv.arionwallet.modules.policy.application.AccessPolicyService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.transaction.domain.TransactionStatus;
@@ -27,9 +28,12 @@ public class WalletService {
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final AccessPolicyService accessPolicyService;
 
     @Transactional
     public InitiateFundingResponseDto initiateFunding(User currentUser, FundWalletRequestDto request) {
+
+        accessPolicyService.requireActive(currentUser);
 
         // Find the users wallet
         Wallet wallet = walletRepository.findByUserIdAndCurrency(currentUser.getId(), "NGN")

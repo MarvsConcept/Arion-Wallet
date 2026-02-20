@@ -5,12 +5,14 @@ import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
 import com.marv.arionwallet.modules.fraud.application.FraudService;
+import com.marv.arionwallet.modules.policy.application.AccessPolicyService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.transaction.domain.TransactionStatus;
 import com.marv.arionwallet.modules.transaction.domain.TransactionType;
 import com.marv.arionwallet.modules.transfer.presentation.TransferRequestDto;
 import com.marv.arionwallet.modules.transfer.presentation.TransferResponseDto;
+import com.marv.arionwallet.modules.user.domain.KycLevel;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.user.domain.UserRepository;
 import com.marv.arionwallet.modules.wallet.domain.Wallet;
@@ -31,9 +33,12 @@ public class TransferService {
     private final TransactionRepository transactionRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
     private final FraudService fraudService;
+    private final AccessPolicyService accessPolicyService;
 
     @Transactional
     public TransferResponseDto transfer(User sender, TransferRequestDto request, String idempotencyKey) {
+
+        accessPolicyService.requireActive(sender);
 
         // Currency is NGN
         if (!request.getCurrency().trim().equalsIgnoreCase("NGN")) {

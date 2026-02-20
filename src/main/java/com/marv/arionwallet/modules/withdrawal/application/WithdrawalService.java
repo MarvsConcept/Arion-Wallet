@@ -152,6 +152,7 @@ public class WithdrawalService {
     @Transactional
     public WithdrawalResponseDto completeWithdrawal(String reference) {
 
+
         // find transaction by reference
         Transaction transaction = transactionRepository.findByReferenceAndType(reference, TransactionType.WITHDRAWAL)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid reference"));
