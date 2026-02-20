@@ -2,8 +2,10 @@ package com.marv.arionwallet.modules.admin.presentation;
 
 import com.marv.arionwallet.core.dto.ApiResponse;
 import com.marv.arionwallet.modules.admin.application.AdminRoleService;
+import com.marv.arionwallet.modules.user.domain.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -17,22 +19,28 @@ public class AdminRoleController {
 
     @PostMapping("/{userId}/roles/grant")
     public ApiResponse<UserRolesResponseDto> grantRole(
+            Authentication authentication,
             @PathVariable UUID userId,
             @Valid @RequestBody GrantRoleRequestDto request
             ) {
 
-        UserRolesResponseDto response = adminRoleService.grantRole(userId, request.getRole());
+        User actor = (User) authentication.getPrincipal();
+
+        UserRolesResponseDto response = adminRoleService.grantRole(actor.getId(), userId, request.getRole());
 
         return ApiResponse.ok("Role granted", response);
     }
 
     @PostMapping("/{userId}/roles/revoke")
     public ApiResponse<UserRolesResponseDto> revokeRole(
+            Authentication authentication,
             @PathVariable UUID userId,
             @Valid @RequestBody RevokeRoleRequestDto request
     ) {
 
-        UserRolesResponseDto response = adminRoleService.revokeRole(userId, request.getRole());
+        User actor = (User) authentication.getPrincipal();
+
+        UserRolesResponseDto response = adminRoleService.revokeRole(actor.getId(), userId, request.getRole());
 
         return ApiResponse.ok("Role revoked", response);
     }

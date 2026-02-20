@@ -1,6 +1,9 @@
 package com.marv.arionwallet.modules.admin.application;
 
 import com.marv.arionwallet.modules.admin.presentation.UserRolesResponseDto;
+import com.marv.arionwallet.modules.audit.application.AuditService;
+import com.marv.arionwallet.modules.audit.presentation.AuditAction;
+import com.marv.arionwallet.modules.audit.presentation.AuditTargetType;
 import com.marv.arionwallet.modules.auth.domain.*;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.user.domain.UserRepository;
@@ -19,10 +22,11 @@ public class AdminRoleService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+    private final AuditService auditService;
 
 
     @Transactional
-    public UserRolesResponseDto grantRole(UUID userId, RoleName roleName) {
+    public UserRolesResponseDto grantRole(UUID actorUserId, UUID userId, RoleName roleName) {
 
         // Confirm user exists
         User user = userRepository.findById(userId)
@@ -38,6 +42,14 @@ public class AdminRoleService {
         // If not, Create role
         if (!alreadyHasRole) {
             userRoleRepository.save(new UserRole(user, role));
+
+            auditService.record(
+                    actorUserId,
+                    AuditAction.ROLE_GRANT,
+                    AuditTargetType.ROLE,
+                    userId.toString(),
+                    "role= " + roleName.name()
+            );
         }
 
         return buildResponse(user);
@@ -45,7 +57,7 @@ public class AdminRoleService {
     }
 
     @Transactional
-    public UserRolesResponseDto revokeRole(UUID userId, RoleName roleName) {
+    public UserRolesResponseDto revokeRole(UUID actorUserId, UUID userId, RoleName roleName) {
 
         // Confirm user exists
         User user = userRepository.findById(userId)
@@ -54,8 +66,16 @@ public class AdminRoleService {
         // Find the UserRole rwo for (userId + role)
         userRoleRepository.findByUserIdAndRole_Name(userId, roleName)
 
-                // If it exist, delete it
+                // If it exists, delete it
                 .ifPresent(userRoleRepository::delete);
+
+                auditService.record(
+                        actorUserId,
+                        AuditAction.ROLE_REVOKE,
+                        AuditTargetType.ROLE,
+                        userId.toString(),
+                        "role=" + roleName.name()
+                );
 
         return buildResponse(user);
 

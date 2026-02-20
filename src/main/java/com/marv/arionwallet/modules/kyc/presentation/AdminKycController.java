@@ -30,22 +30,28 @@ public class AdminKycController {
 
     @PostMapping("/{userId}/approve")
     public ApiResponse<KycResponseDto> approve(
+            Authentication authentication,
             @PathVariable UUID userId,
             @Valid @RequestBody KycApproveRequestDto request
             ) {
 
-        KycResponseDto response = adminKycService.approve(userId, request.getLevel());
+        User actor = (User) authentication.getPrincipal();
+
+        KycResponseDto response = adminKycService.approve(actor.getId(), userId, request.getLevel());
 
         return ApiResponse.ok("KYC successfully Approved", response);
     }
 
     @PostMapping("/{userId}/reject")
     public ApiResponse<KycResponseDto> reject(
+            Authentication authentication,
             @PathVariable UUID userId,
             @Valid @RequestBody KycRejectRequestDto request
     ) {
 
-        KycResponseDto response = adminKycService.reject(userId, request.getReason());
+        User actor = (User) authentication.getPrincipal();
+
+        KycResponseDto response = adminKycService.reject(actor.getId(), userId, request.getReason());
 
         return ApiResponse.ok("KYC role rejected", response);
     }

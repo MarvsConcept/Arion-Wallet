@@ -1,5 +1,8 @@
 package com.marv.arionwallet.modules.kyc.application;
 
+import com.marv.arionwallet.modules.audit.application.AuditService;
+import com.marv.arionwallet.modules.audit.presentation.AuditAction;
+import com.marv.arionwallet.modules.audit.presentation.AuditTargetType;
 import com.marv.arionwallet.modules.kyc.domain.KycProfile;
 import com.marv.arionwallet.modules.kyc.domain.KycProfileRepository;
 import com.marv.arionwallet.modules.kyc.domain.KycStatus;
@@ -23,6 +26,7 @@ public class AdminKycService {
 
     private final KycProfileRepository kycProfileRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public Page<KycReviewItemDto> listPending(int page, int size) {
@@ -47,7 +51,7 @@ public class AdminKycService {
     }
 
     @Transactional
-    public KycResponseDto approve(UUID userId, KycLevel level) {
+    public KycResponseDto approve(UUID actorUserID, UUID userId, KycLevel level) {
 
         // Load KycProfile by userId
         KycProfile profile = kycProfileRepository.findByUserId(userId)
@@ -69,11 +73,19 @@ public class AdminKycService {
         user.upgradeKyc(level);
         userRepository.save(user);
 
+        auditService.record(
+                actorUserID,
+                AuditAction.KYC_APPROVE,
+                AuditTargetType.KYC_PROFILE,
+                userId.toString(),
+                "approvedLevel=" + level.name()
+        );
+
         return toResponse(profile);
     }
 
     @Transactional
-    public KycResponseDto reject(UUID userId, String reasom) {
+    public KycResponseDto reject(UUID actorUserId, UUID userId, String reason) {
 
         // Load KycProfile by userId
         KycProfile profile = kycProfileRepository.findByUserId(userId)
@@ -81,12 +93,20 @@ public class AdminKycService {
 
         // ensure status is PENDING
         if (profile.getStatus() != KycStatus.PENDING) {
-            throw new IllegalStateException("Only pending KYC can be approved");
+            throw new IllegalStateException("Only pending KYC can be rejected");
         }
 
         // reject
-        profile.reject(reasom);
+        profile.reject(reason);
         kycProfileRepository.save(profile);
+
+        auditService.record(
+                actorUserId,
+                AuditAction.KYC_REJECT,
+                AuditTargetType.KYC_PROFILE,
+                userId.toString(),
+                "reason=" + reason
+        );
 
         // user stays NONE on rejection
         return toResponse(profile);
