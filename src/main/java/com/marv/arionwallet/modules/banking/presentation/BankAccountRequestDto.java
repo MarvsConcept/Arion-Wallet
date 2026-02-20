@@ -1,6 +1,7 @@
-package com.marv.arionwallet.modules.withdrawal.presentation;
+package com.marv.arionwallet.modules.banking.presentation;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,5 +13,6 @@ public class BankAccountRequestDto {
     private String bankCode;
 
     @NotBlank
+    @Pattern(regexp = "\\d{10}", message = "Account number must be 10 digits")
     private String accountNumber;
 }

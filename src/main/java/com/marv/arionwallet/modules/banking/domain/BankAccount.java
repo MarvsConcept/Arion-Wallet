@@ -1,4 +1,4 @@
-package com.marv.arionwallet.modules.withdrawal.domain;
+package com.marv.arionwallet.modules.banking.domain;
 
 import com.marv.arionwallet.modules.user.domain.User;
 import jakarta.persistence.*;

@@ -1,4 +1,4 @@
-package com.marv.arionwallet.modules.withdrawal.domain;
+package com.marv.arionwallet.modules.banking.domain;
 
 import java.util.Optional;
 import java.util.UUID;

@@ -1,8 +1,8 @@
-package com.marv.arionwallet.modules.withdrawal.presentation;
+package com.marv.arionwallet.modules.banking.presentation;
 
 import com.marv.arionwallet.core.dto.ApiResponse;
 import com.marv.arionwallet.modules.user.domain.User;
-import com.marv.arionwallet.modules.withdrawal.application.BankAccountService;
+import com.marv.arionwallet.modules.banking.application.BankAccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
