@@ -5,10 +5,12 @@ import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
 import com.marv.arionwallet.modules.fraud.application.FraudService;
+import com.marv.arionwallet.modules.policy.application.AccessPolicyService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.transaction.domain.TransactionStatus;
 import com.marv.arionwallet.modules.transaction.domain.TransactionType;
+import com.marv.arionwallet.modules.user.domain.KycLevel;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.user.domain.UserStatus;
 import com.marv.arionwallet.modules.wallet.domain.Wallet;
@@ -40,11 +42,15 @@ public class WithdrawalService {
     private final LedgerEntryRepository ledgerEntryRepository;
     private final WalletRepository walletRepository;
     private final FraudService fraudService;
+    private final AccessPolicyService accessPolicyService;
 
     @Transactional
     public WithdrawalResponseDto requestWithdrawal(User user,
                                                    WithdrawalRequestDto request,
                                                    String idempotencyKey) {
+
+        accessPolicyService.requireActive(user);
+        accessPolicyService.requireKycAtLeast(user, KycLevel.BASIC);
 
         // Validate Currency
         if (!request.getCurrency().trim().equalsIgnoreCase("NGN")) {
