@@ -5,6 +5,8 @@ import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
 import com.marv.arionwallet.modules.fraud.application.FraudService;
+import com.marv.arionwallet.modules.payout.application.PayoutProvider;
+import com.marv.arionwallet.modules.policy.application.AccessPolicyService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
 import com.marv.arionwallet.modules.transaction.domain.TransactionStatus;
@@ -49,6 +51,10 @@ class WithdrawalServiceTest {
     private WalletRepository walletRepository;
     @Mock
     private FraudService fraudService;
+    @Mock
+    private AccessPolicyService accessPolicyService;
+    @Mock
+    private PayoutProvider payoutProvider;
 
     private WithdrawalService withdrawalService;
 
@@ -60,9 +66,12 @@ class WithdrawalServiceTest {
                 withdrawalDetailsRepository,
                 ledgerEntryRepository,
                 walletRepository,
-                fraudService
+                fraudService,
+                 accessPolicyService,
+                 payoutProvider
                 );
     }
+    
 
     @Test
     void requestWithdrawal_shouldReturnExisting_whenIdempotencyKeyReused_includingDestination() {
