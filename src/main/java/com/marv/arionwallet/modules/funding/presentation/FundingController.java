@@ -21,11 +21,12 @@ public class FundingController {
     @PostMapping("/fund")
     public ApiResponse<InitiateFundingResponseDto> initialFunding(
             Authentication authentication,
+            @RequestHeader(value = "Idempotency-key", required = false) String idempotencyKey,
             @Valid @RequestBody FundWalletRequestDto request) {
 
         User currentUser = (User) authentication.getPrincipal();
 
-        InitiateFundingResponseDto response = fundingService.initiateFunding(currentUser, request);
+        InitiateFundingResponseDto response = fundingService.initiateFunding(currentUser, request, idempotencyKey );
 
         return ApiResponse.ok("Funding initiated successfully", response);
     }
@@ -39,12 +40,12 @@ public class FundingController {
 //        return ApiResponse.ok("Funding completed successfully", response);
 //    }
 
-    @PostMapping("/fund/{reference}")
-    public ApiResponse<CompleteFundingResponseDto> completeFunding(
-            @PathVariable String reference) {
-
-        CompleteFundingResponseDto response = fundingService.completeFunding(reference);
-
-        return ApiResponse.ok("Funding completed successfully", response);
-    }
+//    @PostMapping("/fund/{reference}")
+//    public ApiResponse<CompleteFundingResponseDto> completeFunding(
+//            @PathVariable String reference) {
+//
+//        CompleteFundingResponseDto response = fundingService.completeFunding(reference);
+//
+//        return ApiResponse.ok("Funding completed successfully", response);
+//    }
 }

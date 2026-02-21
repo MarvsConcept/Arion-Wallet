@@ -3,6 +3,7 @@ package com.marv.arionwallet.modules.funding.domain;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -34,6 +35,7 @@ public class FundingDetails {
     private String paymentUrl;
 
 
+    @Builder
     public FundingDetails(UUID id,
                           Transaction transaction,
                           String providerReference,
