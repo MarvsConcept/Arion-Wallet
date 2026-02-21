@@ -24,7 +24,7 @@ public class BankAccountController {
 
         BankAccountResponseDto response = bankAccountService.addBankAccount(currentUser, request);
 
-        return ApiResponse.ok("Bank sccount saved", response);
+        return ApiResponse.ok("Bank account saved", response);
     }
 
 }

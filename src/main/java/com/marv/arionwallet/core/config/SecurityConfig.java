@@ -41,7 +41,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
-                                "/swagger-ui/**"
+                                "/swagger-ui/**",
+                                "/api/v1/banks/**"
                         ).permitAll()
                         // ADMIN-only: role management
                         .requestMatchers("/api/v1/admin/users/*/roles/**").hasRole("ADMIN")

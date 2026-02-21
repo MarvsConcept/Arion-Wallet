@@ -1,7 +1,10 @@
 package com.marv.arionwallet.modules.banking.infrastructure;
 
 import com.marv.arionwallet.modules.banking.application.BankingProvider;
+import com.marv.arionwallet.modules.banking.presentation.BankDto;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class StubBankingProvider implements BankingProvider {
@@ -22,5 +25,17 @@ public class StubBankingProvider implements BankingProvider {
         String name = "Test User " + last4;
 
         return new NameEnquiryResult(name, bankCode, accountNumber);
+    }
+
+    @Override
+    public List<BankDto> listBanks() {
+        return List.of(
+
+                new BankDto("044", "Access Bank"),
+                new BankDto("058", "GTBank"),
+                new BankDto("011", "First Bank"),
+                new BankDto("057", "Zenith Bank"),
+                new BankDto("033", "UBA")
+        );
     }
 }
