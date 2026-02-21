@@ -20,7 +20,7 @@ public class WithdrawalProcessingJob {
     private final WithdrawalService withdrawalService;
     private static final Logger log = LoggerFactory.getLogger(WithdrawalProcessingJob.class);
 
-    @Scheduled(fixedDelay = 30_000) // every 5 seconds
+    @Scheduled(fixedDelay = 60_000) // every 60 seconds
     public void processPendingWithdrawals() {
 
         List<Transaction> pending = transactionRepository
@@ -31,7 +31,7 @@ public class WithdrawalProcessingJob {
 
         for (Transaction tx : pending) {
             try {
-                withdrawalService.completeWithdrawal(tx.getReference());
+                withdrawalService.processWithdrawal(tx.getReference());
             } catch (Exception e) {
                 log.error("Failed processing withdrawal {}", tx.getReference(), e);
             }

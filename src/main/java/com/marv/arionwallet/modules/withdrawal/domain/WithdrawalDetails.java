@@ -33,17 +33,29 @@ public class WithdrawalDetails {
     @Column(name = "account_name", nullable = false)
     private String accountName;
 
+    @Column(name = "provider_reference")
+    private String providerReference;
+
+
     @Builder
     public WithdrawalDetails(UUID id,
                              Transaction transaction,
                              String bankCode,
                              String accountNumber,
-                             String accountName) {
+                             String accountName,
+                             String providerReference) {
         Instant now = Instant.now();
         this.id = id != null ? id : UUID.randomUUID();
         this.transaction = transaction;
         this.bankCode = bankCode;
         this.accountNumber = accountNumber;
         this.accountName = accountName;
+        this.providerReference = providerReference;
+    }
+
+    public void setProviderReferenceIfAbsent(String ref) {
+        if (this.providerReference == null && ref != null && !ref.isBlank()) {
+            this.providerReference = ref;
+        }
     }
 }

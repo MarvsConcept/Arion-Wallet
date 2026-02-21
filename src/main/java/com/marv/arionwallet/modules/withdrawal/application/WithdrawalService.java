@@ -5,6 +5,8 @@ import com.marv.arionwallet.modules.ledger.domain.LedgerEntry;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
 import com.marv.arionwallet.modules.fraud.application.FraudService;
+import com.marv.arionwallet.modules.payout.application.PayoutProvider;
+import com.marv.arionwallet.modules.payout.application.PayoutStatus;
 import com.marv.arionwallet.modules.policy.application.AccessPolicyService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
@@ -43,6 +45,7 @@ public class WithdrawalService {
     private final WalletRepository walletRepository;
     private final FraudService fraudService;
     private final AccessPolicyService accessPolicyService;
+    private final PayoutProvider payoutProvider;
 
     @Transactional
     public WithdrawalResponseDto requestWithdrawal(User user,
@@ -148,10 +151,8 @@ public class WithdrawalService {
     }
 
 
-
     @Transactional
-    public WithdrawalResponseDto completeWithdrawal(String reference) {
-
+    public WithdrawalResponseDto processWithdrawal(String reference) {
 
         // find transaction by reference
         Transaction transaction = transactionRepository.findByReferenceAndType(reference, TransactionType.WITHDRAWAL)
@@ -160,7 +161,6 @@ public class WithdrawalService {
         // check if transaction is already Success/ Failed and return existing response
         if (transaction.getStatus() == TransactionStatus.SUCCESS ||
                 transaction.getStatus() == TransactionStatus.FAILED) {
-
             return toResponse(transaction);
         }
 
@@ -169,23 +169,62 @@ public class WithdrawalService {
             throw new IllegalStateException("Withdrawal must be pending to complete");
         }
 
+        // Load WithdrawalDetails and read/write provider reference
+        WithdrawalDetails details = withdrawalDetailsRepository.findByTransaction(transaction)
+                .orElseThrow(() -> new IllegalArgumentException("Withdrawal details missing for tx " + transaction.getReference()));
 
-        // Load wallet
-        Wallet wallet = walletRepository.findByUserIdAndCurrencyForUpdate(
-                transaction.getUser().getId(),
+        // Call the provider
+        PayoutProvider.PayoutRequest request = new PayoutProvider.PayoutRequest(
+                transaction.getReference(),
+                details.getBankCode(),
+                details.getAccountNumber(),
+                transaction.getAmount(),
                 transaction.getCurrency()
-        )
-                .orElseThrow(() -> new IllegalArgumentException("Wallet not found for user"));
+        );
+
+        PayoutProvider.PayoutResult result = payoutProvider.initiatePayout(request);
+
+        // Save provider reference once
+        details.setProviderReferenceIfAbsent(result.providerReference());
+        withdrawalDetailsRepository.save(details);
+
+        // Decide based on provider result
+        // Failed
+        if (result.status() == PayoutStatus.FAILED) {
+            transaction.markFailed();
+            transactionRepository.save(transaction);
+            return toResponse(transaction);
+        }
+        // Pending
+        if (result.status() == PayoutStatus.PENDING) {
+            // keep pending, the worker will try it later
+            return toResponse(transaction);
+        }
+        // Success
+        return finalizeSuccessfulWithdrawal(transaction);
+
+    }
 
 
-        // Ensure transaction belongs to a wallet currency and user is active.
+    private WithdrawalResponseDto finalizeSuccessfulWithdrawal(Transaction transaction) {
+
+        // Lock wallet
+        Wallet wallet = walletRepository.findByUserIdAndCurrencyForUpdate(
+                        transaction.getUser().getId(),
+                        transaction.getCurrency()
+                ).orElseThrow(() -> new IllegalArgumentException("Wallet not found for user"));
+
+        // if user is frozen, fail it
         if (transaction.getUser().getStatus() != UserStatus.ACTIVE) {
             transaction.markFailed();
             transactionRepository.save(transaction);
             return toResponse(transaction);
         }
 
-        // Recheck Balance
+        // fraud check
+        fraudService.validateWithdrawal(transaction.getUser(), transaction.getAmount());
+
+        // Balance Check
         if (wallet.getBalance() < transaction.getAmount()){
             transaction.markFailed();
             transactionRepository.save(transaction);
@@ -227,6 +266,13 @@ public class WithdrawalService {
 
         // build Response
         return toResponse(transaction);
+    }
+
+
+    @Transactional
+    public WithdrawalResponseDto completeWithdrawal(String reference) {
+
+        return processWithdrawal(reference);
     }
 
 
