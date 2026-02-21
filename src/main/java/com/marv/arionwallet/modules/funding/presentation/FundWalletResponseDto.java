@@ -1,4 +1,4 @@
-package com.marv.arionwallet.modules.wallet.presentation;
+package com.marv.arionwallet.modules.funding.presentation;
 
 import lombok.Builder;
 import lombok.Getter;

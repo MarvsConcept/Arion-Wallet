@@ -1,4 +1,4 @@
-package com.marv.arionwallet.modules.wallet.presentation;
+package com.marv.arionwallet.modules.funding.presentation;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

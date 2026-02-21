@@ -1,10 +1,9 @@
-package com.marv.arionwallet.modules.wallet.presentation;
+package com.marv.arionwallet.modules.funding.presentation;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.SecondaryRow;
 
 @Getter
 @Setter

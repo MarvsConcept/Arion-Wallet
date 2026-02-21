@@ -1,6 +1,9 @@
 package com.marv.arionwallet.modules.wallet.presentation;
 
 import com.marv.arionwallet.core.dto.ApiResponse;
+import com.marv.arionwallet.modules.funding.presentation.CompleteFundingResponseDto;
+import com.marv.arionwallet.modules.funding.presentation.FundWalletRequestDto;
+import com.marv.arionwallet.modules.funding.presentation.InitiateFundingResponseDto;
 import com.marv.arionwallet.modules.transaction.application.TransactionService;
 import com.marv.arionwallet.modules.transaction.domain.TransactionStatus;
 import com.marv.arionwallet.modules.transaction.domain.TransactionType;
@@ -21,38 +24,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class WalletController {
 
-    private final WalletService walletService;
     private final TransactionService transactionService;
-
-    @PostMapping("/fund")
-    public ApiResponse<InitiateFundingResponseDto> initialFunding(
-            Authentication authentication,
-            @Valid @RequestBody FundWalletRequestDto request) {
-
-        User currentUser = (User) authentication.getPrincipal();
-
-        InitiateFundingResponseDto response = walletService.initiateFunding(currentUser, request);
-
-        return ApiResponse.ok("Funding initiated successfully", response);
-    }
-
-//    @PostMapping("/fund/callback")
-//    public ApiResponse<CompleteFundingResponseDto> completeFunding(
-//                        @Valid @RequestBody FundingCallbackRequestDto request) {
-//
-//        CompleteFundingResponseDto response = walletService.completeFunding(request.getReference());
-//
-//        return ApiResponse.ok("Funding completed successfully", response);
-//    }
-
-    @PostMapping("/fund/{reference}")
-    public ApiResponse<CompleteFundingResponseDto> completeFunding(
-            @PathVariable String reference) {
-
-        CompleteFundingResponseDto response = walletService.completeFunding(reference);
-
-        return ApiResponse.ok("Funding completed successfully", response);
-    }
 
 
 
