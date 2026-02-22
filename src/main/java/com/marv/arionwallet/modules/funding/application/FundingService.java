@@ -128,7 +128,7 @@ public class FundingService {
     }
 
     @Transactional
-    public CompleteFundingResponseDto handleWebhook(String providerReference, PaymentWebhookStatus status) {
+    public CompleteFundingResponseDto settleFundingFromProviderEvent(String providerReference, PaymentWebhookStatus status) {
 
         FundingDetails details = fundingDetailsRepository.findByProviderReference(providerReference)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown provider reference"));
