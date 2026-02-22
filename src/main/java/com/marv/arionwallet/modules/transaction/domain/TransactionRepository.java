@@ -1,7 +1,9 @@
 package com.marv.arionwallet.modules.transaction.domain;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
@@ -68,6 +70,10 @@ public interface TransactionRepository {
     int failStalePendingWithdrawals(Instant cutoff);
 
     List<Transaction> findTop20ByTypeAndStatusOrderByCreatedAtAsc(TransactionType type, TransactionStatus pending);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from Transaction t where t.id = :id")
+    Optional<Transaction> findByIdForUpdate(UUID id);
 }
 
 

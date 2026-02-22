@@ -13,7 +13,7 @@ public interface WithdrawalDetailsRepository {
 
     Optional<WithdrawalDetails> findByTransaction(Transaction transaction);
 
-    Optional<WithdrawalDetails> findByTransaction_Reference(String reference);
+    Optional<WithdrawalDetails> findByProviderReference(String providerReference);
 
     Optional<WithdrawalDetails> findByTransaction_User_IdAndTransaction_Reference(UUID userId, String reference);
 

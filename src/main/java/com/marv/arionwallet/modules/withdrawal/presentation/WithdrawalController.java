@@ -34,14 +34,14 @@ public class WithdrawalController {
         return ApiResponse.ok("Withdrawal initiated successfully", response);
     }
 
-    @PostMapping("/{reference}/complete")
-    public ApiResponse<WithdrawalResponseDto> completeWithdrawal(
-            @PathVariable String reference) {
-
-        WithdrawalResponseDto response = withdrawalService.completeWithdrawal(reference);
-
-        return ApiResponse.ok("Withdrawal processed", response);
-    }
+//    @PostMapping("/{reference}/complete")
+//    public ApiResponse<WithdrawalResponseDto> completeWithdrawal(
+//            @PathVariable String reference) {
+//
+//        WithdrawalResponseDto response = withdrawalService.completeWithdrawal(reference);
+//
+//        return ApiResponse.ok("Withdrawal processed", response);
+//    }
 
     @GetMapping("/{reference}")
     public ApiResponse<WithdrawalDetailsResponseDto> getWithdrawal(

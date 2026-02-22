@@ -7,6 +7,7 @@ import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
 import com.marv.arionwallet.modules.fraud.application.FraudService;
 import com.marv.arionwallet.modules.payout.application.PayoutProvider;
 import com.marv.arionwallet.modules.payout.application.PayoutStatus;
+import com.marv.arionwallet.modules.payout.presentation.PayoutWebhookStatus;
 import com.marv.arionwallet.modules.policy.application.AccessPolicyService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
 import com.marv.arionwallet.modules.transaction.domain.TransactionRepository;
@@ -67,35 +68,20 @@ public class WithdrawalService {
 
         // Check idempotency
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
-            Optional<Transaction> existingTx = transactionRepository.findByUserIdAndIdempotencyKeyAndType(user.getId(), idempotencyKey, TransactionType.WITHDRAWAL);
+            Optional<Transaction> existingTx =
+                    transactionRepository.findByUserIdAndIdempotencyKeyAndType(
+                            user.getId(),
+                            idempotencyKey,
+                            TransactionType.WITHDRAWAL
+                    );
 
             if (existingTx.isPresent()) {
-                Transaction tx = existingTx.get();
-
-                WithdrawalDetails details = withdrawalDetailsRepository
-                        .findByTransaction(tx)
-                        .orElseThrow(() -> new IllegalArgumentException("Withdrawal details missing for tx " + tx.getReference()));
-
-                return WithdrawalResponseDto.builder()
-                        .reference(tx.getReference())
-                        .status(tx.getStatus())
-                        .currency(tx.getCurrency())
-                        .amountInKobo(tx.getAmount())
-                        .bankCode(details.getBankCode())
-                        .accountName(details.getAccountName())
-                        .accountNumber(details.getAccountNumber())
-                        .createdAt(tx.getCreatedAt())
-                        .build();
+                return toResponse(existingTx.get());
             }
         }
 
-        // Validate Account Status
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalArgumentException("User account is not Active");
-        }
-
         // Load Wallet
-        Wallet wallet = walletRepository.findByUserIdAndCurrencyForUpdate(user.getId(), request.getCurrency())
+        Wallet wallet = walletRepository.findByUserIdAndCurrency(user.getId(), request.getCurrency())
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
 
         // Validate Balance =
@@ -136,45 +122,10 @@ public class WithdrawalService {
                 .transaction(transaction)
                 .build();
 
-        withdrawalDetailsRepository.save(details);
+        details = withdrawalDetailsRepository.save(details);
 
-        return WithdrawalResponseDto.builder()
-                .reference(transaction.getReference())
-                .status(transaction.getStatus())
-                .currency(transaction.getCurrency())
-                .amountInKobo(transaction.getAmount())
-                .bankCode(bankAccount.getBankCode())
-                .accountName(bankAccount.getAccountName())
-                .accountNumber(bankAccount.getAccountNumber())
-                .createdAt(transaction.getCreatedAt())
-                .build();
-    }
-
-
-    @Transactional
-    public WithdrawalResponseDto processWithdrawal(String reference) {
-
-        // find transaction by reference
-        Transaction transaction = transactionRepository.findByReferenceAndType(reference, TransactionType.WITHDRAWAL)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid reference"));
-
-        // check if transaction is already Success/ Failed and return existing response
-        if (transaction.getStatus() == TransactionStatus.SUCCESS ||
-                transaction.getStatus() == TransactionStatus.FAILED) {
-            return toResponse(transaction);
-        }
-
-        // Requires Pending
-        if (transaction.getStatus() != TransactionStatus.PENDING) {
-            throw new IllegalStateException("Withdrawal must be pending to complete");
-        }
-
-        // Load WithdrawalDetails and read/write provider reference
-        WithdrawalDetails details = withdrawalDetailsRepository.findByTransaction(transaction)
-                .orElseThrow(() -> new IllegalArgumentException("Withdrawal details missing for tx " + transaction.getReference()));
-
-        // Call the provider
-        PayoutProvider.PayoutRequest request = new PayoutProvider.PayoutRequest(
+        // Initiate payout with provider
+        PayoutProvider.PayoutRequest payoutRequest = new PayoutProvider.PayoutRequest(
                 transaction.getReference(),
                 details.getBankCode(),
                 details.getAccountNumber(),
@@ -182,31 +133,122 @@ public class WithdrawalService {
                 transaction.getCurrency()
         );
 
-        PayoutProvider.PayoutResult result = payoutProvider.initiatePayout(request);
+        try {
+            PayoutProvider.PayoutResult result = payoutProvider.initiatePayout(payoutRequest);
 
-        // Save provider reference once
-        details.setProviderReferenceIfAbsent(result.providerReference());
-        withdrawalDetailsRepository.save(details);
+            // Save provider reference once
+            details.setProviderReferenceIfAbsent(result.providerReference());
+            withdrawalDetailsRepository.save(details);
 
-        // Decide based on provider result
-        // Failed
-        if (result.status() == PayoutStatus.FAILED) {
+            // Optional: if provider immediately says FAILED, mark tx FAILED
+            if (result.status() == PayoutStatus.FAILED) {
+                transaction.markFailed();
+                transactionRepository.save(transaction);
+            }
+
+            // Return PENDING/FAILED snapshot (webhook is source of truth for SUCCESS)
+            return toResponse(transaction);
+
+        } catch ( Exception ex) {
+            transaction.markFailed();
+            transactionRepository.save(transaction);
+            // optionally store error message later
+            return toResponse(transaction);
+        }
+    }
+
+
+    @Transactional
+    public WithdrawalResponseDto settleWithdrawalFromWebhook(String providerReference,
+                                                             PayoutWebhookStatus status) {
+
+
+        WithdrawalDetails details = withdrawalDetailsRepository.findByProviderReference(providerReference)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown provider reference"));
+
+        // LOCK the transaction to avoid double-settlement on concurrent webhooks
+        Transaction transaction = transactionRepository.findByIdForUpdate(details.getTransaction().getId())
+                .orElseThrow(() -> new IllegalStateException("Transaction missing"));
+
+//        Transaction transaction = details.getTransaction();
+
+        // If already finalized, return existing...Idempotent
+        if (transaction.getStatus() == TransactionStatus.SUCCESS || transaction.getStatus() == TransactionStatus.FAILED) {
+            return toResponse(transaction);
+        }
+        if (transaction.getStatus() != TransactionStatus.PENDING) {
+            throw new IllegalStateException("Withdrawal must be PENDING to settle");
+        }
+        if (status == PayoutWebhookStatus.FAILED) {
             transaction.markFailed();
             transactionRepository.save(transaction);
             return toResponse(transaction);
         }
-        // Pending
-        if (result.status() == PayoutStatus.PENDING) {
-            // keep pending, the worker will try it later
-            return toResponse(transaction);
-        }
-        // Success
+
         return finalizeSuccessfulWithdrawal(transaction);
 
     }
 
+//    @Transactional
+//    public WithdrawalResponseDto processWithdrawal(String reference) {
+//
+//        // find transaction by reference
+//        Transaction transaction = transactionRepository.findByReferenceAndType(reference, TransactionType.WITHDRAWAL)
+//                .orElseThrow(() -> new IllegalArgumentException("Invalid reference"));
+//
+//        // check if transaction is already Success/ Failed and return existing response
+//        if (transaction.getStatus() == TransactionStatus.SUCCESS ||
+//                transaction.getStatus() == TransactionStatus.FAILED) {
+//            return toResponse(transaction);
+//        }
+//
+//        // Requires Pending
+//        if (transaction.getStatus() != TransactionStatus.PENDING) {
+//            throw new IllegalStateException("Withdrawal must be pending to complete");
+//        }
+//
+//        // Load WithdrawalDetails and read/write provider reference
+//        WithdrawalDetails details = withdrawalDetailsRepository.findByTransaction(transaction)
+//                .orElseThrow(() -> new IllegalArgumentException("Withdrawal details missing for tx " + transaction.getReference()));
+//
+//        // Call the provider
+//        PayoutProvider.PayoutRequest request = new PayoutProvider.PayoutRequest(
+//                transaction.getReference(),
+//                details.getBankCode(),
+//                details.getAccountNumber(),
+//                transaction.getAmount(),
+//                transaction.getCurrency()
+//        );
+//
+//        PayoutProvider.PayoutResult result = payoutProvider.initiatePayout(request);
+//
+//        // Save provider reference once
+//        details.setProviderReferenceIfAbsent(result.providerReference());
+//        withdrawalDetailsRepository.save(details);
+//
+//        // Decide based on provider result
+//        // Failed
+//        if (result.status() == PayoutStatus.FAILED) {
+//            transaction.markFailed();
+//            transactionRepository.save(transaction);
+//            return toResponse(transaction);
+//        }
+//        // Pending
+//        if (result.status() == PayoutStatus.PENDING) {
+//            // keep pending, the worker will try it later
+//            return toResponse(transaction);
+//        }
+//        // Success
+//        return finalizeSuccessfulWithdrawal(transaction);
+//
+//    }
 
     private WithdrawalResponseDto finalizeSuccessfulWithdrawal(Transaction transaction) {
+
+        // Ensure pending before debit
+        if (transaction.getStatus() != TransactionStatus.PENDING) {
+            throw new IllegalStateException("Withdrawal must be PENDING to finalize");
+        }
 
         // Lock wallet
         Wallet wallet = walletRepository.findByUserIdAndCurrencyForUpdate(
@@ -269,13 +311,6 @@ public class WithdrawalService {
     }
 
 
-    @Transactional
-    public WithdrawalResponseDto completeWithdrawal(String reference) {
-
-        return processWithdrawal(reference);
-    }
-
-
     private WithdrawalResponseDto toResponse(Transaction tx) {
         WithdrawalDetails details = withdrawalDetailsRepository.findByTransaction(tx)
                 .orElseThrow(() -> new IllegalArgumentException("Withdrawal details missing for tx " + tx.getReference()));
@@ -286,7 +321,7 @@ public class WithdrawalService {
                 .currency(tx.getCurrency())
                 .amountInKobo(tx.getAmount())
                 .bankCode(details.getBankCode())
-                .accountNumber(details.getAccountNumber())
+                .accountNumber(maskAccount(details.getAccountNumber()))
                 .accountName(details.getAccountName())
                 .createdAt(tx.getCreatedAt())
                 .build();
