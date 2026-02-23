@@ -20,23 +20,13 @@ public class PaymentWebhookController {
     private final PaymentWebhookService paymentWebhookService;
     private final ObjectMapper objectMapper;
 
-    @PostMapping
-    public ApiResponse<CompleteFundingResponseDto> handle(
+    @PostMapping("/paystack")
+    public ApiResponse<Void> handlePaystackWebhook(
             HttpServletRequest request,
             @RequestBody String rawBody
     ) throws Exception {
 
-        PaymentWebhookRequestDto body =
-                objectMapper.readValue(rawBody, PaymentWebhookRequestDto.class);
-
-        CompleteFundingResponseDto response =
-                paymentWebhookService.handleFundingWebhook(
-                        body.getProviderReference(),
-                        body.getStatus(),
-                        request,
-                        rawBody
-                );
-
-        return ApiResponse.ok("Webhook processed", response);
+        paymentWebhookService.handlePaystackFundingWebhook(request, rawBody);
+        return ApiResponse.ok("Webhook received", null);
     }
 }

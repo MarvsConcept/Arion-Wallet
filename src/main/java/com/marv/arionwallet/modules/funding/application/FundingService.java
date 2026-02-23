@@ -81,7 +81,7 @@ public class FundingService {
         // Generate payment reference
         String reference = "FUND-" + UUID.randomUUID()
                 .toString()
-                .replace("_", "")
+                .replace("-", "")
                 .substring(0, 12);
 
         // Create PENDING transaction
@@ -111,7 +111,7 @@ public class FundingService {
         FundingDetails details = FundingDetails.builder()
                 .transaction(transaction)
                 .providerReference(init.providerReference())
-                .paymentUrl(init.providerReference())
+                .paymentUrl(init.paymentUrl())
                 .build();
 
         fundingDetailsRepository.save(details);
@@ -128,16 +128,22 @@ public class FundingService {
     }
 
     @Transactional
-    public CompleteFundingResponseDto settleFundingFromProviderEvent(String providerReference, PaymentWebhookStatus status) {
+    public void settleFundingFromProviderEvent(String providerReference,
+                                               PaymentWebhookStatus status,
+                                               long providerAmount,
+                                               String providerCurrency) {
 
         FundingDetails details = fundingDetailsRepository.findByProviderReference(providerReference)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown provider reference"));
 
-        Transaction transaction = details.getTransaction();
+        // Lock transaction row(prevents double credit on concurrent webhooks)
+        Transaction transaction = transactionRepository.findByIdForUpdate(details.getTransaction().getId())
+                .orElseThrow(() -> new IllegalStateException("Transaction missing"));
 
         // Idempotent webhook
         if (transaction.getStatus() == TransactionStatus.SUCCESS || transaction.getStatus() == TransactionStatus.FAILED) {
-            return buildCompleteResponse(transaction);
+            buildCompleteResponse(transaction);
+            return;
         }
 
         // Transaction must be Pending
@@ -147,7 +153,21 @@ public class FundingService {
         if (status == PaymentWebhookStatus.FAILED) {
             transaction.markFailed();
             transactionRepository.save(transaction);
-            return buildCompleteResponse(transaction);
+            buildCompleteResponse(transaction);
+            return;
+        }
+
+        // Validate amount/currency from Paystack payload
+        if (providerAmount != transaction.getAmount()) {
+            transaction.markFailed();
+            transactionRepository.save(transaction);
+            throw new IllegalStateException("Amount mismatch for reference " + providerReference);
+        }
+        if (providerCurrency != null && !providerCurrency.isBlank()
+                && !providerCurrency.equalsIgnoreCase(transaction.getCurrency())) {
+            transaction.markFailed();
+            transactionRepository.save(transaction);
+            throw new IllegalStateException("Currency mismatch for reference " + providerReference);
         }
 
         // Load the wallet
@@ -155,10 +175,6 @@ public class FundingService {
                 transaction.getUser().getId(),
                 transaction.getCurrency()
         ).orElseThrow(() -> new IllegalStateException("Wallet not found for user"));
-
-        // Mark Transaction as Success and save
-        transaction.markSuccess();
-        transactionRepository.save(transaction);
 
         // Credit Wallet
         wallet.credit(transaction.getAmount());
@@ -190,21 +206,25 @@ public class FundingService {
         ledgerEntryRepository.save(externalEntry);
         ledgerEntryRepository.save(walletEntry);
 
-        return CompleteFundingResponseDto.builder()
-                .reference(transaction.getReference())
-                .currency(transaction.getCurrency())
-                .amountInKobo(transaction.getAmount())
-                .newBalanceInKobo(wallet.getBalance())
-                .build();
+        // Mark Transaction as Success and save
+        transaction.markSuccess();
+        transactionRepository.save(transaction);
+
+//        CompleteFundingResponseDto.builder()
+//                .reference(transaction.getReference())
+//                .currency(transaction.getCurrency())
+//                .amountInKobo(transaction.getAmount())
+//                .newBalanceInKobo(wallet.getBalance())
+//                .build();
     }
 
-    private CompleteFundingResponseDto buildCompleteResponse(Transaction transaction) {
+    private void buildCompleteResponse(Transaction transaction) {
         Wallet wallet = walletRepository.findByUserIdAndCurrency(
                 transaction.getUser().getId(),
                 transaction.getCurrency()
         ).orElseThrow(() -> new IllegalStateException("Wallet not found for user"));
 
-        return CompleteFundingResponseDto.builder()
+        CompleteFundingResponseDto.builder()
                 .reference(transaction.getReference())
                 .currency(transaction.getCurrency())
                 .amountInKobo(transaction.getAmount())
