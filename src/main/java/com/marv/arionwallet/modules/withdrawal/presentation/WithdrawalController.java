@@ -43,16 +43,16 @@ public class WithdrawalController {
 //        return ApiResponse.ok("Withdrawal processed", response);
 //    }
 
-    @GetMapping("/{reference}")
-    public ApiResponse<WithdrawalDetailsResponseDto> getWithdrawal(
-            Authentication authentication,
-            @PathVariable String reference
-    ) {
-        User currentUser = (User) authentication.getPrincipal();
-        WithdrawalDetailsResponseDto dto = withdrawalService.getWithdrawal(currentUser, reference);
-
-        return ApiResponse.ok("Withdrawal fetched", dto);
-    }
+//    @GetMapping("/{reference}")
+//    public ApiResponse<WithdrawalDetailsResponseDto> getWithdrawal(
+//            Authentication authentication,
+//            @PathVariable String reference
+//    ) {
+//        User currentUser = (User) authentication.getPrincipal();
+//        WithdrawalDetailsResponseDto dto = withdrawalService.getWithdrawal(currentUser, reference);
+//
+//        return ApiResponse.ok("Withdrawal fetched", dto);
+//    }
 
 
     @GetMapping

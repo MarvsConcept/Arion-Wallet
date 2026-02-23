@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class PayoutWebhookController {
 
     private final PayoutWebhookService payoutWebhookService;
-    private final ObjectMapper objectMapper; // better than new ObjectMapper()
+    private final ObjectMapper objectMapper;
 
     @PostMapping
     public ApiResponse<WithdrawalResponseDto> webhook(
@@ -23,7 +23,6 @@ public class PayoutWebhookController {
             @RequestBody String rawBody
     ) throws Exception {
 
-        // parse AFTER receiving raw body
         PayoutWebhookRequestDto dto =
                 objectMapper.readValue(rawBody, PayoutWebhookRequestDto.class);
 

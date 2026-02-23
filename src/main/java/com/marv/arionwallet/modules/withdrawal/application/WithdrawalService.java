@@ -81,7 +81,7 @@ public class WithdrawalService {
         }
 
         // Load Wallet
-        Wallet wallet = walletRepository.findByUserIdAndCurrency(user.getId(), request.getCurrency())
+        Wallet wallet = walletRepository.findByUserIdAndCurrencyForUpdate(user.getId(), request.getCurrency())
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
 
         // Validate Balance =
