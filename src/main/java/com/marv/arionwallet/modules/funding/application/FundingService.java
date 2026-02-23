@@ -98,15 +98,22 @@ public class FundingService {
 
         transaction = transactionRepository.save(transaction);
 
-        PaymentProvider.InitPaymentResult init = paymentProvider.initializePayment(
-                new PaymentProvider.InitPaymentRequest(
-                        transaction.getReference(),
-                        currentUser.getId(),
-                        transaction.getAmount(),
-                        transaction.getCurrency(),
-                        currentUser.getEmail()
-                )
-        );
+        PaymentProvider.InitPaymentResult init;
+        try {
+            init = paymentProvider.initializePayment(
+                    new PaymentProvider.InitPaymentRequest(
+                            transaction.getReference(),
+                            currentUser.getId(),
+                            transaction.getAmount(),
+                            transaction.getCurrency(),
+                            currentUser.getEmail()
+                    )
+            );
+        } catch (Exception ex) {
+            transaction.markFailed();
+            transactionRepository.save(transaction);
+            throw ex; // fail fast
+        }
 
         FundingDetails details = FundingDetails.builder()
                 .transaction(transaction)
