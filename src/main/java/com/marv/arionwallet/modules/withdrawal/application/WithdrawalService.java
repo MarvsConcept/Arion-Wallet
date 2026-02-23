@@ -16,6 +16,7 @@ import com.marv.arionwallet.modules.transaction.domain.TransactionType;
 import com.marv.arionwallet.modules.user.domain.KycLevel;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.user.domain.UserStatus;
+import com.marv.arionwallet.modules.wallet.application.HoldService;
 import com.marv.arionwallet.modules.wallet.domain.Wallet;
 import com.marv.arionwallet.modules.wallet.domain.WalletRepository;
 import com.marv.arionwallet.modules.banking.domain.BankAccount;
@@ -47,6 +48,7 @@ public class WithdrawalService {
     private final FraudService fraudService;
     private final AccessPolicyService accessPolicyService;
     private final PayoutProvider payoutProvider;
+    private HoldService holdService;
 
     @Transactional
     public WithdrawalResponseDto requestWithdrawal(User user,
@@ -85,7 +87,8 @@ public class WithdrawalService {
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
 
         // Validate Balance =
-        if (wallet.getBalance() < request.getAmountInKobo()) {
+        long available = holdService.availableBalance(wallet);
+        if (available < request.getAmountInKobo()) {
             throw new IllegalArgumentException("Insufficient Balance");
         }
 
@@ -113,6 +116,8 @@ public class WithdrawalService {
 
         // Save the transaction
         transaction = transactionRepository.save(transaction);
+
+        holdService.createActiveHold(wallet, transaction.getId(), transaction.getAmount(), transaction.getCurrency());
 
         WithdrawalDetails details = WithdrawalDetails.builder()
                 .accountName(bankAccount.getAccountName())
@@ -143,6 +148,7 @@ public class WithdrawalService {
             // Optional: if provider immediately says FAILED, mark tx FAILED
             if (result.status() == PayoutStatus.FAILED) {
                 transaction.markFailed();
+                holdService.releaseHold(transaction.getId());
                 transactionRepository.save(transaction);
             }
 
@@ -152,6 +158,7 @@ public class WithdrawalService {
         } catch ( Exception ex) {
             transaction.markFailed();
             transactionRepository.save(transaction);
+            holdService.releaseHold(transaction.getId());
             // optionally store error message later
             return toResponse(transaction);
         }
@@ -182,66 +189,13 @@ public class WithdrawalService {
         if (status == PayoutWebhookStatus.FAILED) {
             transaction.markFailed();
             transactionRepository.save(transaction);
+            holdService.releaseHold(transaction.getId());
             return toResponse(transaction);
         }
 
         return finalizeSuccessfulWithdrawal(transaction);
 
     }
-
-//    @Transactional
-//    public WithdrawalResponseDto processWithdrawal(String reference) {
-//
-//        // find transaction by reference
-//        Transaction transaction = transactionRepository.findByReferenceAndType(reference, TransactionType.WITHDRAWAL)
-//                .orElseThrow(() -> new IllegalArgumentException("Invalid reference"));
-//
-//        // check if transaction is already Success/ Failed and return existing response
-//        if (transaction.getStatus() == TransactionStatus.SUCCESS ||
-//                transaction.getStatus() == TransactionStatus.FAILED) {
-//            return toResponse(transaction);
-//        }
-//
-//        // Requires Pending
-//        if (transaction.getStatus() != TransactionStatus.PENDING) {
-//            throw new IllegalStateException("Withdrawal must be pending to complete");
-//        }
-//
-//        // Load WithdrawalDetails and read/write provider reference
-//        WithdrawalDetails details = withdrawalDetailsRepository.findByTransaction(transaction)
-//                .orElseThrow(() -> new IllegalArgumentException("Withdrawal details missing for tx " + transaction.getReference()));
-//
-//        // Call the provider
-//        PayoutProvider.PayoutRequest request = new PayoutProvider.PayoutRequest(
-//                transaction.getReference(),
-//                details.getBankCode(),
-//                details.getAccountNumber(),
-//                transaction.getAmount(),
-//                transaction.getCurrency()
-//        );
-//
-//        PayoutProvider.PayoutResult result = payoutProvider.initiatePayout(request);
-//
-//        // Save provider reference once
-//        details.setProviderReferenceIfAbsent(result.providerReference());
-//        withdrawalDetailsRepository.save(details);
-//
-//        // Decide based on provider result
-//        // Failed
-//        if (result.status() == PayoutStatus.FAILED) {
-//            transaction.markFailed();
-//            transactionRepository.save(transaction);
-//            return toResponse(transaction);
-//        }
-//        // Pending
-//        if (result.status() == PayoutStatus.PENDING) {
-//            // keep pending, the worker will try it later
-//            return toResponse(transaction);
-//        }
-//        // Success
-//        return finalizeSuccessfulWithdrawal(transaction);
-//
-//    }
 
     private WithdrawalResponseDto finalizeSuccessfulWithdrawal(Transaction transaction) {
 
@@ -256,22 +210,27 @@ public class WithdrawalService {
                         transaction.getCurrency()
                 ).orElseThrow(() -> new IllegalArgumentException("Wallet not found for user"));
 
-        // if user is frozen, fail it
+        // Ensure hold is ACTIVE (means money was reserved
+        holdService.requireActiveHold(transaction.getId());
+
+        // if user is frozen, fail it and release hold
         if (transaction.getUser().getStatus() != UserStatus.ACTIVE) {
             transaction.markFailed();
             transactionRepository.save(transaction);
+            holdService.releaseHold(transaction.getId());
             return toResponse(transaction);
         }
 
         // fraud check
         fraudService.validateWithdrawal(transaction.getUser(), transaction.getAmount());
 
-        // Balance Check
-        if (wallet.getBalance() < transaction.getAmount()){
-            transaction.markFailed();
-            transactionRepository.save(transaction);
-            return toResponse(transaction);
-        }
+//        // Balance Check
+//        if (wallet.getBalance() < transaction.getAmount()){
+//            transaction.markFailed();
+//            transactionRepository.save(transaction);
+//            holdService.releaseHold(transaction.getId());
+//            return toResponse(transaction);
+//        }
 
         // Debit wallet
         wallet.debit(transaction.getAmount());
@@ -305,6 +264,9 @@ public class WithdrawalService {
         // Mark Transaction as Success
         transaction.markSuccess();
         transactionRepository.save(transaction);
+
+        // Consume hold
+        holdService.consumeHold(transaction.getId());
 
         // build Response
         return toResponse(transaction);

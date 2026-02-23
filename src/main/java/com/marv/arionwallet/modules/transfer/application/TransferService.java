@@ -15,6 +15,7 @@ import com.marv.arionwallet.modules.transfer.presentation.TransferResponseDto;
 import com.marv.arionwallet.modules.user.domain.KycLevel;
 import com.marv.arionwallet.modules.user.domain.User;
 import com.marv.arionwallet.modules.user.domain.UserRepository;
+import com.marv.arionwallet.modules.wallet.application.HoldService;
 import com.marv.arionwallet.modules.wallet.domain.Wallet;
 import com.marv.arionwallet.modules.wallet.domain.WalletRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class TransferService {
     private final LedgerEntryRepository ledgerEntryRepository;
     private final FraudService fraudService;
     private final AccessPolicyService accessPolicyService;
+    private final HoldService holdService;
 
     @Transactional
     public TransferResponseDto transfer(User sender, TransferRequestDto request, String idempotencyKey) {
@@ -54,12 +56,17 @@ public class TransferService {
         User recipient = userRepository.findByAccountNumber(request.getRecipientAccountNumber())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+        // Avoid self transfer
+        if (sender.getId().equals(recipient.getId())) {
+            throw new IllegalArgumentException("You cannot transfer to yourself");
+        }
+
         // Load Sender Wallet
         Wallet senderWallet = walletRepository.findByUserIdAndCurrencyForUpdate(sender.getId(), "NGN")
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
 
         // Load recipient wallet
-        Wallet recipientWallet = walletRepository.findByUserIdAndCurrency(recipient.getId(), "NGN")
+        Wallet recipientWallet = walletRepository.findByUserIdAndCurrencyForUpdate(recipient.getId(), "NGN")
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
 
         // Narration
@@ -72,6 +79,8 @@ public class TransferService {
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             Optional<Transaction> existingTx = transactionRepository.findByUserIdAndIdempotencyKeyAndType(sender.getId(),idempotencyKey, TransactionType.TRANSFER);
 
+            long senderAvailable = holdService.availableBalance(senderWallet);
+
             if (existingTx.isPresent()) {
                 Transaction tx = existingTx.get();
 
@@ -83,7 +92,7 @@ public class TransferService {
                         .senderAccountNumber(sender.getAccountNumber())
                         .recipientFullName("To: " + recipient.getFirstName() + " " + recipient.getLastName())
                         .recipientAccountNumber(recipient.getAccountNumber())
-                        .senderNewBalance(senderWallet.getBalance())
+                        .senderNewBalance(senderAvailable)
                         .recipientNewBalance(recipientWallet.getBalance())
                         .narration(tx.getDescription())
                         .createdAt(tx.getCreatedAt())
@@ -94,7 +103,8 @@ public class TransferService {
         fraudService.validateTransfer(sender, request.getAmountInKobo());
 
         // Sender Balance is greater then amount
-        if (senderWallet.getBalance() < request.getAmountInKobo()) {
+        long available = holdService.availableBalance(senderWallet);
+        if (available < request.getAmountInKobo()) {
             throw new IllegalArgumentException("Insufficient balance");
         }
 
@@ -151,6 +161,7 @@ public class TransferService {
         ledgerEntryRepository.save(debitWalletEntry);
         ledgerEntryRepository.save(creditWalletEntry);
 
+        long senderAvailable = holdService.availableBalance(senderWallet);
 
         return TransferResponseDto.builder()
                 .reference(transaction.getReference())
@@ -160,7 +171,7 @@ public class TransferService {
                 .senderAccountNumber(sender.getAccountNumber())
                 .recipientFullName("To: " + recipient.getFirstName() + " " + recipient.getLastName())
                 .recipientAccountNumber(request.getRecipientAccountNumber())
-                .senderNewBalance(senderWallet.getBalance())
+                .senderNewBalance(senderAvailable)
                 .recipientNewBalance(recipientWallet.getBalance())
                 .narration(narration)
                 .createdAt(transaction.getCreatedAt())

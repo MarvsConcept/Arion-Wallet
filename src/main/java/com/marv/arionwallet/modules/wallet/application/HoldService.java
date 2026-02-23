@@ -20,6 +20,22 @@ public class HoldService {
         return wallet.getBalance() - activeHolds;
     }
 
+    public WalletHold createActiveHold(Wallet wallet,
+                                       UUID transactionId,
+                                       long amount,
+                                       String currency) {
+
+        WalletHold hold = WalletHold.builder()
+                .walletId(wallet.getId())
+                .transactionId(transactionId)
+                .amount(amount)
+                .currency(currency)
+                .status(HoldStatus.ACTIVE)
+                .build();
+
+        return walletHoldRepository.save(hold);
+    }
+
     public void releaseHold(UUID transactionId) {
         WalletHold hold = walletHoldRepository.findByTransactionId(transactionId)
                 .orElseThrow(() -> new IllegalStateException("Hold missing for transaction " + transactionId));
