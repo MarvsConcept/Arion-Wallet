@@ -60,7 +60,8 @@ public class BankAccountController {
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(Authentication authentication) {
+    public ApiResponse<Void> delete(Authentication authentication,
+                                    @PathVariable UUID id) {
 
         User currentUser = (User) authentication.getPrincipal();
 

@@ -26,5 +26,6 @@ public interface BankAccountRepository {
 
     Optional<BankAccount> findTopByUserIdOrderByCreatedAtDesc(UUID userId);
 
-    void delete(BankAccount account);
+    void delete(BankAccount bankAccount);
+
 }
