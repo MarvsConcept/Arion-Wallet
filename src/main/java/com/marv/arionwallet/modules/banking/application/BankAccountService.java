@@ -72,6 +72,15 @@ public class BankAccountService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public BankAccountResponseDto getDefaultAccount(User user) {
+
+        BankAccount account = bankAccountRepository.findByUserIdAndIsDefaultTrue(user.getId())
+                .orElseThrow(() -> new IllegalStateException("No default bank account set"));
+
+        return toResponse(account);
+    }
+
 
     private BankAccountResponseDto toResponse(BankAccount account) {
         return BankAccountResponseDto.builder()
