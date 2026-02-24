@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -38,4 +39,32 @@ public class BankAccountController {
         return ApiResponse.ok("Default bank account updated", null);
     }
 
+    @GetMapping
+    public ApiResponse<List<BankAccountResponseDto>> list(Authentication authentication) {
+
+        User currentUser = (User) authentication.getPrincipal();
+
+        List<BankAccountResponseDto> response = bankAccountService.listMyAccounts(currentUser);
+
+        return ApiResponse.ok("Bank account fetched", response );
+    }
+
+    @GetMapping("/default")
+    public ApiResponse<BankAccountResponseDto> getDefault(Authentication authentication) {
+
+        User currentUser = (User) authentication.getPrincipal();
+
+        BankAccountResponseDto response = bankAccountService.getDefaultAccount(currentUser);
+
+        return ApiResponse.ok("Default bank account fetched", response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(Authentication authentication) {
+
+        User currentUser = (User) authentication.getPrincipal();
+
+        bankAccountService.deleteAccount(currentUser, id);
+        return ApiResponse.ok("Bank account deleted",null);
+    }
 }
