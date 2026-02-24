@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -30,34 +31,47 @@ public class BankAccountService {
 
         if (existing.isPresent()) {
             BankAccount account = existing.get();
-            return BankAccountResponseDto.builder()
-                    .id(account.getId())
-                    .bankCode(account.getBankCode())
-                    .accountName(account.getAccountName())
-                    .accountNumber(account.getAccountNumber())
-                    .createdAt(account.getCreatedAt())
-                    .build();
+            return toResponse(existing.get());
         }
 
         String accountName = accountNameEnquiryService.resolve(bankCode, accountNumber);
 
+        boolean firstAccount = !bankAccountRepository.existsByUserId(user.getId());
+
         BankAccount savedAccount = bankAccountRepository.save(
-                new BankAccount(
-                        null,
-                        user,
-                        bankCode,
-                        accountNumber,
-                        accountName,
-                        null
-                ));
+                BankAccount.builder()
+                        .user(user)
+                        .bankCode(bankCode)
+                        .accountName(accountName)
+                        .accountNumber(accountNumber)
+                        .isDefault(firstAccount)
+                        .build());
 
-        return BankAccountResponseDto.builder()
-                .id(savedAccount.getId())
-                .bankCode(savedAccount.getBankCode())
-                .accountName(savedAccount.getAccountName())
-                .accountNumber(savedAccount.getAccountNumber())
-                .createdAt(savedAccount.getCreatedAt())
-                .build();
 
+        return toResponse(savedAccount);
     }
-}
+
+    @Transactional
+    public void setDefaultBankAccount(User user, UUID bankAccountId) {
+
+        BankAccount account = bankAccountRepository.findByIdAndUserId(bankAccountId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Bank account not found"));
+
+        bankAccountRepository.clearDefaultForUser(user.getId());
+
+        account.setDefault(true);
+        bankAccountRepository.save(account);
+    }
+
+
+    private BankAccountResponseDto toResponse(BankAccount account) {
+        return BankAccountResponseDto.builder()
+                .id(account.getId())
+                .bankCode(account.getBankCode())
+                .accountName(account.getAccountName())
+                .accountNumber(account.getAccountNumber())
+                .isDefault(account.isDefault())
+                .createdAt(account.getCreatedAt())
+                .build();
+    }
+ }

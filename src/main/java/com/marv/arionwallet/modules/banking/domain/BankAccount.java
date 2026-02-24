@@ -38,6 +38,9 @@ public class BankAccount {
     @Column(name = "account_name",nullable = false)
     private String accountName;
 
+    @Column(name = "is_default", nullable = false)
+    private boolean isDefault;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -48,6 +51,7 @@ public class BankAccount {
                        String bankCode,
                        String accountNumber,
                        String accountName,
+                       boolean isDefault,
                        Instant createdAt) {
         Instant now = Instant.now();
 
@@ -56,7 +60,12 @@ public class BankAccount {
         this.bankCode = bankCode;
         this.accountNumber = accountNumber;
         this.accountName = accountName;
+        this.isDefault = isDefault;
         this.createdAt = createdAt != null ? createdAt : now;
+    }
+
+    public void setDefault(boolean isDefault) {
+        this.isDefault = isDefault;
     }
 
     @PrePersist

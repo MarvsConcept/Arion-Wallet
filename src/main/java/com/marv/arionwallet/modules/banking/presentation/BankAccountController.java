@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/bank-accounts")
 @RequiredArgsConstructor
@@ -25,6 +27,15 @@ public class BankAccountController {
         BankAccountResponseDto response = bankAccountService.addBankAccount(currentUser, request);
 
         return ApiResponse.ok("Bank account saved", response);
+    }
+
+    @PostMapping
+    public ApiResponse<Void> setDefault(Authentication authentication,
+                                        @PathVariable UUID id) {
+
+        User currentUser = (User) authentication.getPrincipal();
+        bankAccountService.setDefaultBankAccount(currentUser, id);
+        return ApiResponse.ok("Default bank account updated", null);
     }
 
 }

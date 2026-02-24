@@ -16,5 +16,6 @@ public class BankAccountResponseDto {
     private String bankCode;
     private String accountNumber;
     private String accountName;
+    private boolean isDefault;
     private Instant createdAt;
 }
