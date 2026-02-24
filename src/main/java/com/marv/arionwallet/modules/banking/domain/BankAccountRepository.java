@@ -20,7 +20,11 @@ public interface BankAccountRepository {
 
     @Modifying
     @Query("update BankAccount b set b.isDefault = false where b.user.id = :userId and b.isDefault = true")
-    int clearDefaultForUser(@Param("userId") UUID userId);
+    void clearDefaultForUser(@Param("userId") UUID userId);
 
     Optional<BankAccount> findByUserIdAndIsDefaultTrue(UUID userId);
+
+    Optional<BankAccount> findTopByUserIdOrderByCreatedAtDesc(UUID userId);
+
+    void delete(BankAccount account);
 }
