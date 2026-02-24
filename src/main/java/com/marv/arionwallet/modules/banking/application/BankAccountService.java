@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,6 +65,14 @@ public class BankAccountService {
     }
 
 
+    @Transactional(readOnly = true)
+    public List<BankAccountResponseDto> listMyAccounts(User user) {
+        return bankAccountRepository.findByUserId(user.getId()).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+
     private BankAccountResponseDto toResponse(BankAccount account) {
         return BankAccountResponseDto.builder()
                 .id(account.getId())
@@ -74,4 +83,6 @@ public class BankAccountService {
                 .createdAt(account.getCreatedAt())
                 .build();
     }
+
+
  }
