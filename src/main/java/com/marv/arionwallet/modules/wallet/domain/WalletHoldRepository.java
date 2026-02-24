@@ -9,7 +9,7 @@ public interface WalletHoldRepository {
 
     Optional<WalletHold> findByTransactionId(UUID transactionId);
 
-    long sumActiveHoldsByWallet(UUID walletId);
+//    long sumActiveHoldsByWallet(UUID walletId);
 
     long sumActiveHoldsByWalletId(UUID walletId);
 }

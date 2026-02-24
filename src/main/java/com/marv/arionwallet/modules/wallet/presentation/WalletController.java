@@ -26,8 +26,6 @@ public class WalletController {
 
     private final TransactionService transactionService;
 
-
-
     @GetMapping("/transactions")
     public ApiResponse<Page<TransactionHistoryItemDto>> getMyTransactions(
             Authentication authentication,

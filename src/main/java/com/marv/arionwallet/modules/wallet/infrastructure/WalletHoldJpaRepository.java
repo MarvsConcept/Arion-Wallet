@@ -22,8 +22,11 @@ public interface WalletHoldJpaRepository
            """)
     long sumByWalletIdAndStatus(@Param("walletId") UUID walletId, @Param("status") HoldStatus status);
 
-    @Override
-    default long sumActiveHoldsByWalletId(UUID walletId) {
-        return sumByWalletIdAndStatus(walletId, HoldStatus.ACTIVE);
-    }
+    @Query("""
+       select coalesce(sum(h.amount), 0)
+       from WalletHold h
+       where h.walletId = :walletId and h.status = com.marv.arionwallet.modules.wallet.domain.HoldStatus.ACTIVE
+    """)
+    long sumActiveHoldsByWalletId(@Param("walletId") UUID walletId);
+
 }
