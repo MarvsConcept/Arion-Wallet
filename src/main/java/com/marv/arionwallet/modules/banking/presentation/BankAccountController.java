@@ -29,7 +29,7 @@ public class BankAccountController {
         return ApiResponse.ok("Bank account saved", response);
     }
 
-    @PostMapping
+    @PatchMapping("/{id}/default")
     public ApiResponse<Void> setDefault(Authentication authentication,
                                         @PathVariable UUID id) {
 
