@@ -81,7 +81,25 @@ public class BankAccountService {
         return toResponse(account);
     }
 
+    @Transactional
+    public void deleteAccount(User user, UUID bankAccountId) {
 
+        BankAccount account = bankAccountRepository.findByIdAndUserId(bankAccountId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Bank account not found"));
+
+        boolean wasDefault = account.isDefault();
+
+        bankAccountRepository.delete(account);
+
+        // pick a new default if you deleted the default
+        if (wasDefault) {
+            bankAccountRepository.findTopByUserIdOrderByCreatedAtDesc(user.getId())
+                    .ifPresent(next -> {
+                        next.setDefault(true);
+                        bankAccountRepository.save(next);
+                    });
+        }
+    }
 
 
     private BankAccountResponseDto toResponse(BankAccount account) {
