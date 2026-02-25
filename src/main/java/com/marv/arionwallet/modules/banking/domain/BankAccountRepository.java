@@ -13,9 +13,7 @@ public interface BankAccountRepository {
     BankAccount save(BankAccount bankAccount);
     Optional<BankAccount> findByUserIdAndBankCodeAndAccountNumber(UUID userId, String bankCode, String accountNumber);
     Optional<BankAccount> findByIdAndUserId(UUID id, UUID userId);
-
     List<BankAccount> findByUserId(UUID userId);
-
     boolean existsByUserId(UUID userId);
 
     @Modifying
