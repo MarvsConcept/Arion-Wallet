@@ -131,6 +131,7 @@ public class WithdrawalService {
 
         // Initiate payout with provider
         PayoutProvider.PayoutRequest payoutRequest = new PayoutProvider.PayoutRequest(
+                bankAccount.getId(),
                 transaction.getReference(),
                 details.getBankCode(),
                 details.getAccountNumber(),

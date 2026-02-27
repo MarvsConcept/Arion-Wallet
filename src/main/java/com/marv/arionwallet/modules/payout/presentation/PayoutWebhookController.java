@@ -21,18 +21,9 @@ public class PayoutWebhookController {
     public ApiResponse<WithdrawalResponseDto> webhook(
             HttpServletRequest request,
             @RequestBody String rawBody
-    ) throws Exception {
+    ) {
 
-        PayoutWebhookRequestDto dto =
-                objectMapper.readValue(rawBody, PayoutWebhookRequestDto.class);
-
-        WithdrawalResponseDto response =
-                payoutWebhookService.handleWebhook(
-                        dto.getProviderReference(),
-                        dto.getStatus(),
-                        request,
-                        rawBody
-                );
+        WithdrawalResponseDto response = payoutWebhookService.handlePaystackWebhook(request, rawBody);
 
         return ApiResponse.ok("Payout webhook processed", response);
     }
