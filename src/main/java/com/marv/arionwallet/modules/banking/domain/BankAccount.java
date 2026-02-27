@@ -41,6 +41,9 @@ public class BankAccount {
     @Column(name = "is_default", nullable = false)
     private boolean isDefault;
 
+    @Column(name = "provider_recipient_code")
+    private String providerRecipientCode;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -51,6 +54,7 @@ public class BankAccount {
                        String bankCode,
                        String accountNumber,
                        String accountName,
+                       String providerRecipientCode,
                        boolean isDefault,
                        Instant createdAt) {
         Instant now = Instant.now();
@@ -60,12 +64,19 @@ public class BankAccount {
         this.bankCode = bankCode;
         this.accountNumber = accountNumber;
         this.accountName = accountName;
+        this.providerRecipientCode = providerRecipientCode;
         this.isDefault = isDefault;
         this.createdAt = createdAt != null ? createdAt : now;
     }
 
     public void setDefault(boolean isDefault) {
         this.isDefault = isDefault;
+    }
+
+    public void setProviderRecipientCodeIfAbsent(String code) {
+        if (this.providerRecipientCode == null && code != null && !code.isBlank()) {
+            this.providerRecipientCode = code;
+        }
     }
 
     @PrePersist
