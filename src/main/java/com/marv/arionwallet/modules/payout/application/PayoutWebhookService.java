@@ -50,8 +50,8 @@ public class PayoutWebhookService {
 
         String event = payload.path("event").asText("");
         JsonNode data = payload.path("data");
-
         String reference = data.path("reference").asText(null);
+
         if (reference == null || reference.isBlank()) {
             throw new IllegalArgumentException("Missing transfer reference");
         }
@@ -59,6 +59,7 @@ public class PayoutWebhookService {
         if ("transfer.success".equalsIgnoreCase(event)) {
             return withdrawalService.settleWithdrawalFromWebhook(reference, PayoutWebhookStatus.SUCCESS);
         }
+
         if ("transfer.failed".equalsIgnoreCase(event)) {
             return withdrawalService.settleWithdrawalFromWebhook(reference, PayoutWebhookStatus.FAILED);
         }

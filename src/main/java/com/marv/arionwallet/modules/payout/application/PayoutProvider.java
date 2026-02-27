@@ -1,5 +1,7 @@
 package com.marv.arionwallet.modules.payout.application;
 
+import com.marv.arionwallet.modules.payout.presentation.PayoutStatus;
+
 import java.util.UUID;
 
 public interface PayoutProvider {
@@ -11,6 +13,7 @@ public interface PayoutProvider {
             String reference,
             String bankCode,
             String accountNumber,
+            String accountName,
             long amountInKobo,
             String currency
     ) {

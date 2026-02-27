@@ -6,7 +6,7 @@ import com.marv.arionwallet.modules.ledger.domain.LedgerEntryDirection;
 import com.marv.arionwallet.modules.ledger.domain.LedgerEntryRepository;
 import com.marv.arionwallet.modules.fraud.application.FraudService;
 import com.marv.arionwallet.modules.payout.application.PayoutProvider;
-import com.marv.arionwallet.modules.payout.application.PayoutStatus;
+import com.marv.arionwallet.modules.payout.presentation.PayoutStatus;
 import com.marv.arionwallet.modules.payout.presentation.PayoutWebhookStatus;
 import com.marv.arionwallet.modules.policy.application.AccessPolicyService;
 import com.marv.arionwallet.modules.transaction.domain.Transaction;
@@ -135,6 +135,7 @@ public class WithdrawalService {
                 transaction.getReference(),
                 details.getBankCode(),
                 details.getAccountNumber(),
+                details.getAccountName(),
                 transaction.getAmount(),
                 transaction.getCurrency()
         );

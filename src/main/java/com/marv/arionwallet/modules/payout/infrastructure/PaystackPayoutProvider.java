@@ -1,18 +1,14 @@
 package com.marv.arionwallet.modules.payout.infrastructure;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marv.arionwallet.modules.banking.domain.BankAccount;
 import com.marv.arionwallet.modules.banking.domain.BankAccountRepository;
 import com.marv.arionwallet.modules.payout.application.PayoutProvider;
-import com.marv.arionwallet.modules.payout.application.PayoutStatus;
-import jakarta.transaction.Transactional;
+import com.marv.arionwallet.modules.payout.presentation.PayoutStatus;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -31,31 +27,28 @@ public class PaystackPayoutProvider implements PayoutProvider {
     private String secretKey;
 
     @Override
-    @Transactional
     public PayoutResult initiatePayout(PayoutRequest request) {
 
-        BankAccount bankAccount = bankAccountRepository.findByIdAndUserId(request.bankAccountId(), null /*optional*/)
+        BankAccount bankAccount = bankAccountRepository.findById(request.bankAccountId())
                 .orElseThrow(() -> new IllegalArgumentException("Bank account not found"));
 
-        // Ensure recipient_code exists
+        // 1) Ensure recipient exists
         String recipientCode = bankAccount.getProviderRecipientCode();
         if (recipientCode == null || recipientCode.isBlank()) {
-            recipientCode = createRecipient(bankAccount, request.currency());
+            recipientCode = createRecipient(request);
             bankAccount.setProviderRecipientCodeIfAbsent(recipientCode);
             bankAccountRepository.save(bankAccount);
         }
 
-        // Initiate transfer using recipient_code + our reference
+        // 2) Initiate transfer
         initiateTransfer(recipientCode, request);
 
-        // Paystack transfer is async → webhook is source of truth
         return new PayoutResult(PayoutStatus.PENDING, request.reference(), "Transfer initiated");
     }
 
-    private String createRecipient(BankAccount bankAccount, String currency) {
-        // Paystack transfer recipient endpoint :contentReference[oaicite:6]{index=6}
+    private String createRecipient(PayoutRequest request) {
 
-        String url = baseUrl + "/transferrecipient";
+        String url = baseUrl + "/transferrecipient"; // Paystack transfer recipient
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -70,32 +63,36 @@ public class PaystackPayoutProvider implements PayoutProvider {
           "currency": "%s"
         }
         """.formatted(
-                bankAccount.getAccountName(),
-                bankAccount.getAccountNumber(),
-                bankAccount.getBankCode(),
-                currency
+                request.accountName(),
+                request.accountNumber(),
+                request.bankCode(),
+                request.currency()
         );
 
         ResponseEntity<String> res = restTemplate.postForEntity(url, new HttpEntity<>(body, headers), String.class);
+
         if (!res.getStatusCode().is2xxSuccessful() || res.getBody() == null) {
-            throw new IllegalStateException("Paystack create recipient failed");
+            throw new IllegalStateException("Paystack recipient creation failed");
         }
 
         try {
             JsonNode root = objectMapper.readTree(res.getBody());
             if (!root.path("status").asBoolean(false)) {
-                throw new IllegalStateException(root.path("message").asText("Recipient create failed"));
+                throw new IllegalStateException(root.path("message").asText("Recipient creation failed"));
             }
-            return root.path("data").path("recipient_code").asText();
+            String code = root.path("data").path("recipient_code").asText(null);
+            if (code == null || code.isBlank()) {
+                throw new IllegalStateException("Recipient creation returned empty recipient_code");
+            }
+            return code;
         } catch (Exception e) {
             throw new IllegalStateException("Could not parse Paystack recipient response", e);
         }
     }
 
     private void initiateTransfer(String recipientCode, PayoutRequest request) {
-        // Paystack initiate transfer endpoint :contentReference[oaicite:7]{index=7}
 
-        String url = baseUrl + "/transfer";
+        String url = baseUrl + "/transfer"; // Paystack initiate transfer
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -118,6 +115,7 @@ public class PaystackPayoutProvider implements PayoutProvider {
         );
 
         ResponseEntity<String> res = restTemplate.postForEntity(url, new HttpEntity<>(body, headers), String.class);
+
         if (!res.getStatusCode().is2xxSuccessful() || res.getBody() == null) {
             throw new IllegalStateException("Paystack transfer initiation failed");
         }

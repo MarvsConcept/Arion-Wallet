@@ -1,4 +1,4 @@
-package com.marv.arionwallet.modules.payout.application;
+package com.marv.arionwallet.modules.payout.presentation;
 
 public enum PayoutStatus {
     SUCCESS,
