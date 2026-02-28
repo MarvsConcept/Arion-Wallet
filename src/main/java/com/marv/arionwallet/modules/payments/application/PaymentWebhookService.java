@@ -57,8 +57,6 @@ public class PaymentWebhookService {
                 : PaymentWebhookStatus.FAILED;
 
         // Settle internally
-
         fundingService.settleFundingFromProviderEvent(reference, status, amount, currency);
-
     }
 }

@@ -20,10 +20,10 @@ public class HoldService {
         return wallet.getBalance() - activeHolds;
     }
 
-    public WalletHold createActiveHold(Wallet wallet,
-                                       UUID transactionId,
-                                       long amount,
-                                       String currency) {
+    public void createActiveHold(Wallet wallet,
+                                 UUID transactionId,
+                                 long amount,
+                                 String currency) {
 
         WalletHold hold = WalletHold.builder()
                 .walletId(wallet.getId())
@@ -33,7 +33,7 @@ public class HoldService {
                 .status(HoldStatus.ACTIVE)
                 .build();
 
-        return walletHoldRepository.save(hold);
+        walletHoldRepository.save(hold);
     }
 
     public void releaseHold(UUID transactionId) {

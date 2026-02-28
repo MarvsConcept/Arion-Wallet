@@ -28,6 +28,7 @@ import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalHistoryIte
 import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalRequestDto;
 import com.marv.arionwallet.modules.withdrawal.presentation.WithdrawalResponseDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WithdrawalService {
@@ -48,7 +50,7 @@ public class WithdrawalService {
     private final FraudService fraudService;
     private final AccessPolicyService accessPolicyService;
     private final PayoutProvider payoutProvider;
-    private HoldService holdService;
+    private final HoldService holdService;
 
     @Transactional
     public WithdrawalResponseDto requestWithdrawal(User user,
@@ -142,6 +144,11 @@ public class WithdrawalService {
 
         try {
             PayoutProvider.PayoutResult result = payoutProvider.initiatePayout(payoutRequest);
+            log.info("Payout result: ref={}, status={}, providerRef={}",
+                    transaction.getReference(),
+                    result.status(),
+                    result.providerReference());
+
 
             // Save provider reference once
             details.setProviderReferenceIfAbsent(result.providerReference());
@@ -149,6 +156,9 @@ public class WithdrawalService {
 
             // Optional: if provider immediately says FAILED, mark tx FAILED
             if (result.status() == PayoutStatus.FAILED) {
+                log.error("Payout failed for {} — providerRef={}",
+                        transaction.getReference(),
+                        result.providerReference());
                 transaction.markFailed();
                 holdService.releaseHold(transaction.getId());
                 transactionRepository.save(transaction);
@@ -158,6 +168,7 @@ public class WithdrawalService {
             return toResponse(transaction);
 
         } catch ( Exception ex) {
+            log.error("Payout exception", ex);
             transaction.markFailed();
             transactionRepository.save(transaction);
             holdService.releaseHold(transaction.getId());

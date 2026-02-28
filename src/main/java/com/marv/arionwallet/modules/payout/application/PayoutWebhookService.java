@@ -21,20 +21,6 @@ public class PayoutWebhookService {
     private final WithdrawalService withdrawalService;
     private final ObjectMapper objectMapper;
 
-//    @Transactional
-//    public WithdrawalResponseDto handleWebhook(
-//            String providerReference,
-//            PayoutWebhookStatus status,
-//            HttpServletRequest request,
-//            String rawBody
-//    ) {
-//        webhookSignatureVerifier.verifyOrThrow(request, rawBody);
-//
-//        return withdrawalService.settleWithdrawalFromWebhook(
-//                providerReference,
-//                status
-//        );
-//    }
 
     @Transactional
     public WithdrawalResponseDto handlePaystackWebhook (HttpServletRequest request, String rawBody) {
