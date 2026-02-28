@@ -12,10 +12,10 @@ public class PaymentProviderConfig {
 
     @Bean
     public PaymentProvider paymentProvider(
-            @Value(("${arionwallet.payments.provider}") String provider,
+            @Value("${arionwallet.payments.provider}") String provider,
             PaystackPaymentProvider paystack,
             FlutterwavePaymentProvider flutterwave
-            ) {
-                return "flutterwave".equalsIgnoreCase(provider) ? flutterwave : paystack;
+    ) {
+        return "flutterwave".equalsIgnoreCase(provider) ? flutterwave : paystack;
     }
 }

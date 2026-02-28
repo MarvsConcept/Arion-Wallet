@@ -1,6 +1,7 @@
 package com.marv.arionwallet.core.config;
 
 import com.marv.arionwallet.modules.payout.application.PayoutProvider;
+import com.marv.arionwallet.modules.payout.infrastructure.FlutterwavePayoutProvider;
 import com.marv.arionwallet.modules.payout.infrastructure.PaystackPayoutProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -18,3 +19,4 @@ public class PayoutProviderConfig {
         return "flutterwave".equalsIgnoreCase(provider) ? flutterwave : paystack;
     }
 }
+
