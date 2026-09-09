@@ -66,7 +66,7 @@ public class FlutterwavePaymentProvider implements PaymentProvider {
         }
 
         if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new IllegalStateException("Flutterwave initialize failed: non-2xx response");
+            throw new IllegalStateException("Flutterwave initialize failed: " + response.getBody());
         }
 
         try {

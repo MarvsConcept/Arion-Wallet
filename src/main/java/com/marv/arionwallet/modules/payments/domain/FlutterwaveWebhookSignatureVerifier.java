@@ -12,7 +12,7 @@ import java.util.Base64;
 
 @Component
 @RequiredArgsConstructor
-public class FlutterwaveWebhookSignatureVerifier {
+public class FlutterwaveWebhookSignatureVerifier implements WebhookSignatureVerifier{
 
     @Value("${flutterwave.webhook.secret-hash}")
     private String secretHash;

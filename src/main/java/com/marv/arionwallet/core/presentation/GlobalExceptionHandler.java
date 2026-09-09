@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
-    // 2) Business / bad input errors (what we're throwing everywhere now)
+    // 2) Business / bad input errors
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
         ApiResponse<Void> body = ApiResponse.error(ex.getMessage());

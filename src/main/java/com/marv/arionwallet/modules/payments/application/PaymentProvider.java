@@ -12,11 +12,15 @@ public interface PaymentProvider {
             long amountInKobo,
             String currency,
             String customerEmail
-    ) { }
+    ) {
+
+    }
 
     record InitPaymentResult(
             String providerReference,
             String paymentUrl,
             String message
-    ) { }
+    ) {
+
+    }
 }
