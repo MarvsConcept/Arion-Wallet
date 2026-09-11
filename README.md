@@ -281,7 +281,3 @@ Use `.\mvnw.cmd` on Windows. Tests cover application startup and core wallet, tr
 ## Contributing
 
 Create a focused branch, respect module boundaries, add tests for behavior changes, run the full suite, and never commit credentials, production data, or IDE files.
-
-## License
-
-No license has been declared. Add a license before distribution or external contributions.
