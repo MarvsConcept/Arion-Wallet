@@ -122,28 +122,6 @@ Then open:
 - Swagger UI: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 - OpenAPI JSON: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 
-## Configuration
-
-| Environment variable | Default | Purpose |
-| --- | --- | --- |
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/arionwallet` | PostgreSQL URL |
-| `SPRING_DATASOURCE_USERNAME` | `arion` | Database username |
-| `SPRING_DATASOURCE_PASSWORD` | `arion` | Database password |
-| `ARIONWALLET_JWT_SECRET` | Development placeholder | JWT signing secret |
-| `ARIONWALLET_JWT_EXPIRATION_SECONDS` | `8400000` | Token lifetime in seconds |
-| `ARIONWALLET_BOOTSTRAP_ADMIN_EMAIL` | Development email | Grants `ADMIN` to a matching user at startup |
-| `ARIONWALLET_PAYMENTS_PROVIDER` | `flutterwave` | `paystack` or `flutterwave` funding provider |
-| `ARIONWALLET_PAYOUTS_PROVIDER` | `flutterwave` | `paystack` or `flutterwave` payout provider |
-| `PAYSTACK_SECRET_KEY` | No safe default | Paystack API/signing secret |
-| `FLUTTERWAVE_BASE_URL` | `https://api.flutterwave.com` | Provider base URL |
-| `FLUTTERWAVE_SECRET_KEY` | No safe default | Provider API secret |
-| `FLUTTERWAVE_PUBLIC_KEY` | No safe default | Provider public key |
-| `FLUTTERWAVE_ENCRYPTION_KEY` | No safe default | Provider encryption key |
-| `FLUTTERWAVE_REDIRECT_URL` | Empty | Checkout redirect destination |
-| `FLUTTERWAVE_WEBHOOK_SECRET_HASH` | Empty | Webhook verification hash |
-
-Provider names are case-insensitive. Hibernate currently uses `ddl-auto: update`; replace this with versioned migrations before production use.
-
 ## Authentication and roles
 
 Health, registration, login, bank listing, webhooks, and API docs are public. All other endpoints require:
